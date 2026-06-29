@@ -1,0 +1,44 @@
+dataset: orders
+description: 电商订单数据质量规则集（M2：完整性 + 规范性）
+defaults:
+  severity: major
+rules:
+  # —— 完整性 ——
+  - id: ord_001
+    type: not_null
+    dimension: completeness
+    column: order_id
+    severity: blocker
+    name: 订单号不能为空
+  - id: ord_002
+    type: no_duplicates
+    dimension: completeness
+    columns: [order_id]
+    name: 订单号不能重复
+  - id: ord_003
+    type: range
+    dimension: completeness
+    column: order_amount
+    params: {min: 0, max: 100000}
+    name: 订单金额应在 0~100000 之间
+
+  # —— 规范性 ——
+  - id: ord_004
+    type: regex
+    dimension: conformity
+    column: customer_email
+    params: {pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'}
+    name: 客户邮箱格式
+  - id: ord_005
+    type: enum
+    dimension: conformity
+    column: order_status
+    params:
+      values: [pending, paid, shipped, delivered, cancelled]
+    name: 订单状态枚举
+  - id: ord_006
+    type: type
+    dimension: conformity
+    column: order_date
+    params: {dtype: date}
+    name: 订单日期类型

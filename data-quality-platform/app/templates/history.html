@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}历史记录 · 数据质量监测平台{% endblock %}
+{% block content %}
+<h1>历史记录</h1>
+<p><small>展示最近 100 次检测记录，按时间倒序。</small></p>
+
+{% if runs %}
+<article>
+  <header><strong>总分趋势（按时间）</strong></header>
+  <div id="trend-chart" style="height: 280px; background: #f8f9fa; padding: 1rem; border-radius: 6px;">
+    <svg width="100%" height="240" id="trend-svg"></svg>
+  </div>
+  <script>
+    const points = {{ trend_json|safe }};
+    const svg = document.getElementById('trend-svg');
+    if (points.length === 0) {
+      svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#888">暂无数据</text>';
+    } else {
+      const W = svg.clientWidth || 800, H = 240, pad = 40;
+      const xs = points.map((_, i) => pad + (W - 2*pad) * i / Math.max(1, points.length - 1));
+      const ys = points.map(p => H - pad - (H - 2*pad) * p.y / 100);
+      // 网格
+      for (let g = 0; g <= 4; g++) {
+        const y = pad + (H - 2*pad) * g / 4;
+        const v = 100 - 25 * g;
+        svg.insertAdjacentHTML('beforeend',
+          `<line x1="${pad}" y1="${y}" x2="${W-pad}" y2="${y}" stroke="#dee2e6"/>
+           <text x="${pad - 6}" y="${y + 4}" text-anchor="end" fill="#888" font-size="11">${v}</text>`);
+      }
+      // 折线
+      const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${xs[i]},${ys[i]}`).join(' ');
+      svg.insertAdjacentHTML('beforeend', `<path d="${path}" fill="none" stroke="#1971c2" stroke-width="2"/>`);
+      // 圆点
+      points.forEach((p, i) => {
+        const color = p.y >= 90 ? '#2f9e44' : p.y >= 75 ? '#1971c2' : p.y >= 60 ? '#f08c00' : '#e03131';
+        svg.insertAdjacentHTML('beforeend',
+          `<circle cx="${xs[i]}" cy="${ys[i]}" r="5" fill="${color}">
+             <title>${p.dataset} @ ${p.x}: ${p.y}</title>
+           </circle>`);
+      });
+    }
+  </script>
+</article>
+
+<table>
+  <thead>
+    <tr><th>ID</th><th>时间</th><th>数据集</th><th>数据源</th><th>规则</th>
+        <th>总分</th><th>评级</th><th>通过/失败</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for r in runs %}
+    <tr>
+      <td><code>#{{ r.id }}</code></td>
+      <td><small>{{ r.created_at }}</small></td>
+      <td><strong>{{ r.dataset }}</strong></td>
+      <td><small>{{ r.source_file }}</small></td>
+      <td>{{ r.rules_total }}</td>
+      <td><strong>{{ r.total_score }}</strong></td>
+      <td>{{ r.grade }}</td>
+      <td>{{ r.rules_passed }} / {{ r.rules_failed }}</td>
+      <td><a href="/report/{{ r.id }}">查看</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p><em>还没有检测记录，去 <a href="/upload">检测</a> 跑一次吧。</em></p>
+{% endif %}
+{% endblock %}

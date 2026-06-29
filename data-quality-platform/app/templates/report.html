@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}检测报告 · {{ report.dataset }}{% endblock %}
+{% block content %}
+<h1>检测报告 · {{ report.dataset }}</h1>
+<p>
+  <small>数据源：<code>{{ report.source_file }}</code> ｜ 规则集：<code>{{ report.ruleset_file }}</code> ｜ 检测耗时：{{ report.duration_ms }}ms</small>
+</p>
+
+<article class="score-card score-{{ report.grade }}">
+  <header><strong>总分：{{ report.total_score }}（{{ report.grade }}）</strong></header>
+  <p>
+    {{ report.rules_passed }}/{{ report.rules_total }} 条规则通过，
+    {{ report.rules_failed }} 条失败。
+  </p>
+</article>
+
+<h2>四维度评分</h2>
+<div class="grid">
+  {% for dim, ds in dimension_labels.items() %}
+  <article>
+    <header><strong>{{ ds }}</strong></header>
+    {% set score = report.dimension_scores.get(dim, 100) %}
+    <p style="font-size:2em; margin:0;"><strong>{{ score }}</strong></p>
+    <progress value="{{ score }}" max="100"></progress>
+  </article>
+  {% endfor %}
+</div>
+
+<h2>按严重等级</h2>
+<table>
+  <thead><tr><th>等级</th><th>规则数</th><th>失败数</th></tr></thead>
+  <tbody>
+    {% for sev, info in report.by_severity.items() %}
+    <tr>
+      <td><strong>{{ sev }}</strong></td>
+      <td>{{ info.total }}</td>
+      <td style="color:{% if info.failed %}red{% else %}green{% endif %};">{{ info.failed }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>规则明细</h2>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th><th>名称</th><th>维度</th><th>严重</th>
+      <th>失败/总数</th><th>失败率</th><th>状态</th><th>详情</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in report.results %}
+    <tr>
+      <td><code>{{ r.rule_id }}</code></td>
+      <td>{{ r.name }}</td>
+      <td>{{ r.dimension }}</td>
+      <td>{{ r.severity }}</td>
+      <td>{{ r.failed }} / {{ r.total }}</td>
+      <td>{{ '%.2f%%' % (r.failure_rate * 100) }}</td>
+      <td>
+        {% if r.error %}
+          <mark style="background:#ff6b6b">错误</mark>
+        {% elif r.passed %}
+          <mark style="background:#51cf66">通过</mark>
+        {% else %}
+          <mark style="background:#ffd43b">失败</mark>
+        {% endif %}
+      </td>
+      <td><a href="/report/{{ report.id }}/rule/{{ r.rule_id }}">→ 详情</a></td>
+    </tr>
+    <tr>
+      <td colspan="8">
+        <small>{{ r.message }}</small>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

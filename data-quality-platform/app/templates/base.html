@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}数据质量监测平台{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picocss@2/css/pico.min.css">
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong>📊 数据质量监测平台</strong></li></ul>
+      <ul>
+        <li><a href="/">首页</a></li>
+        <li><a href="/upload">检测</a></li>
+        <li><a href="/rulesets">规则集</a></li>
+        <li><a href="/history">历史</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% if flash %}
+    <article class="flash flash-{{ flash.type }}">{{ flash.message }}</article>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="container">
+    <small>M4 Demo · FastAPI + Jinja2 · 配置驱动规则引擎</small>
+  </footer>
+</body>
+</html>

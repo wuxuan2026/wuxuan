@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}规则集 · 数据质量监测平台{% endblock %}
+{% block content %}
+<h1>规则集</h1>
+<p><small>规则集以 YAML 声明，运行时由引擎按 <code>type</code> 实例化对应规则类。</small></p>
+
+{% for it in items %}
+<article>
+  <header><strong>{{ it.name }}</strong> · <small><code>{{ it.path }}</code></small></header>
+  <pre><code>{{ it.content }}</code></pre>
+</article>
+{% endfor %}
+{% endblock %}

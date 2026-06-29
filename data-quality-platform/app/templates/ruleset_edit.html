@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}编辑 {{ name }} · 规则集{% endblock %}
+{% block content %}
+<h1>编辑规则集 · {{ name }}</h1>
+<p><small>修改后保存。引擎会按 YAML 重新加载规则类型。注意：</small></p>
+<ul>
+  <li>已注册的规则类型：<code>not_null</code>、<code>no_duplicates</code>、<code>range</code>、<code>type</code>、<code>regex</code>、<code>enum</code>、<code>cross_field</code>、<code>primary_key</code>、<code>foreign_key</code>、<code>freshness</code>、<code>arrival</code></li>
+  <li><code>dimension</code> 必须是 completeness / conformity / consistency / timeliness 之一</li>
+</ul>
+
+{% if flash %}
+<article class="flash flash-{{ flash.type }}">{{ flash.message }}</article>
+{% endif %}
+
+<form method="post" action="/rulesets/{{ name }}/edit">
+  <label>YAML 内容
+    <textarea name="content" rows="30" style="font-family: monospace;">{{ content }}</textarea>
+  </label>
+  <div class="grid">
+    <button type="submit">保存</button>
+    <a role="button" class="secondary" href="/rulesets">取消</a>
+  </div>
+</form>
+{% endblock %}

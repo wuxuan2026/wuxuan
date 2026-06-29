@@ -1,0 +1,22 @@
+dataset: customers
+description: 客户维度表规则集
+defaults:
+  severity: major
+rules:
+  - id: cus_001
+    type: not_null
+    dimension: completeness
+    column: customer_id
+    severity: blocker
+    name: 客户号不能为空
+  - id: cus_002
+    type: no_duplicates
+    dimension: completeness
+    columns: [customer_id]
+    name: 客户号不能重复
+  - id: cus_003
+    type: type
+    dimension: conformity
+    column: register_date
+    params: {dtype: date}
+    name: 注册日期类型

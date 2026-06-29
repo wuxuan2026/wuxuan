@@ -32,3 +32,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Project runtime artifacts
+data-quality-platform/data/uploads/*
+data-quality-platform/data/quality.db
+data-quality-platform/.pytest_cache/

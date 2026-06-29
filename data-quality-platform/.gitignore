@@ -1,0 +1,35 @@
+# 上传文件
+data/uploads/*
+!data/uploads/.gitkeep
+
+# 运行时数据（demo CSV 由脚本生成，不入库）
+data/generated/*.csv
+!data/generated/.gitkeep
+
+# SQLite 数据库
+data/*.db
+data/quality.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 环境
+.env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

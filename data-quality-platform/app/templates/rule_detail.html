@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}规则 {{ rule.rule_id }} 详情{% endblock %}
+{% block content %}
+<h1>规则详情 · {{ rule.rule_id }}</h1>
+<p>
+  <small>
+    <a href="/report/{{ run_id }}">← 返回报告</a> ｜
+    数据集：<strong>{{ report.dataset }}</strong> ｜ run_id: #{{ run_id }}
+  </small>
+</p>
+
+<article>
+  <header><strong>{{ rule.name }}</strong>
+    <span style="float:right;">
+      <mark>维度: {{ rule.dimension }}</mark>
+      <mark>严重: {{ rule.severity }}</mark>
+      {% if rule.error %}<mark style="background:#ff6b6b">错误</mark>
+      {% elif rule.passed %}<mark style="background:#51cf66">通过</mark>
+      {% else %}<mark style="background:#ffd43b">失败</mark>{% endif %}
+    </span>
+  </header>
+  <p><strong>结果：</strong> {{ rule.message }}</p>
+  <p><strong>数据：</strong> 共 {{ rule.total }} 条，失败 {{ rule.failed }} 条，失败率 {{ '%.2f%%' % (rule.failure_rate * 100) }}</p>
+  {% if rule.error %}<p><strong>错误：</strong><code>{{ rule.error }}</code></p>{% endif %}
+</article>
+
+{% if rule.sample_failures %}
+<h2>失败样本（前 {{ rule.sample_failures|length }} 条）</h2>
+<table>
+  <thead>
+    <tr>{% for k in rule.sample_failures[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr>
+  </thead>
+  <tbody>
+    {% for s in rule.sample_failures %}
+    <tr>{% for v in s.values() %}<td><code>{{ v }}</code></td>{% endfor %}</tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p><em>无失败样本。</em></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}首页 · 数据质量监测平台{% endblock %}
+{% block content %}
+<h1>欢迎使用数据质量监测平台</h1>
+<p>上传 CSV/Excel 文件或加载内置 demo 数据，对数据做完整性、规范性、一致性、时效性四维度检测，并输出 0-100 分的质量评分。</p>
+
+<div class="grid">
+  <article>
+    <header><strong>🚀 快速开始</strong></header>
+    <p>1. 进入 <a href="/upload">检测</a> 页面</p>
+    <p>2. 选择 demo 数据集（orders/customers/arrivals）或上传自己的 CSV</p>
+    <p>3. 选择对应规则集，点击"开始检测"</p>
+    <p>4. 查看带评分的报告，进入规则明细查看失败样本</p>
+  </article>
+  <article>
+    <header><strong>🛠️ 规则引擎</strong></header>
+    <p>已注册的规则类型：</p>
+    <ul>
+      {% for t in rule_types %}<li><code>{{ t }}</code></li>{% endfor %}
+    </ul>
+    <p>规则集用 YAML 声明，参见 <a href="/rulesets">规则集</a>。</p>
+  </article>
+</div>
+
+<h2>数据集与规则集</h2>
+<table>
+  <thead><tr><th>数据集</th><th>CSV</th><th>规则集</th><th>操作</th></tr></thead>
+  <tbody>
+    {% for d in datasets %}
+    <tr>
+      <td><strong>{{ d.name }}</strong></td>
+      <td><small>{{ d.csv }}</small></td>
+      <td><small>{{ d.yaml }}</small></td>
+      <td>
+        <form method="post" action="/checks/run">
+          <input type="hidden" name="dataset" value="{{ d.name }}">
+          <button type="submit">检测</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>最近检测</h2>
+{% if recent_runs %}
+<table>
+  <thead><tr><th>ID</th><th>时间</th><th>数据集</th><th>总分</th><th>评级</th><th></th></tr></thead>
+  <tbody>
+    {% for r in recent_runs %}
+    <tr>
+      <td>#{{ r.id }}</td>
+      <td><small>{{ r.created_at }}</small></td>
+      <td>{{ r.dataset }}</td>
+      <td><strong>{{ r.total_score }}</strong></td>
+      <td>{{ r.grade }}</td>
+      <td><a href="/report/{{ r.id }}">查看</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><a href="/history">查看全部历史 →</a></p>
+{% else %}
+<p><em>还没有检测记录。</em></p>
+{% endif %}
+{% endblock %}
