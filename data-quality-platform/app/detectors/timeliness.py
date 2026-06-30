@@ -94,10 +94,9 @@ class ArrivalRule(Rule):
         msg = (
             f"有 {failed}/{total} 条订单到达延迟超过 {tolerance_min} 分钟或缺失到达记录"
         )
-        # sample 时回到原 orders 表上找行
-        bad_idx = merged.index[bad]
-        bad_mask = pd.Series(False, index=ctx.df.index)
-        bad_mask.loc[bad_idx] = True
+        # sample 时回到原 orders 表上找行。merge 可能引入重复索引，用 reindex 安全对齐。
+        bad_by_pos = pd.Series(bad.to_numpy(), index=merged.index)
+        bad_mask = bad_by_pos.reindex(ctx.df.index, fill_value=False).astype(bool)
         return self._make_result(
             total=total,
             failed=failed,

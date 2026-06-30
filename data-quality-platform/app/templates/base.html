@@ -1,35 +1,55 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}数据质量监测平台{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picocss@2/css/pico.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
 <body>
-  <header class="container">
-    <nav>
-      <ul><li><strong>📊 数据质量监测平台</strong></li></ul>
-      <ul>
-        <li><a href="/">首页</a></li>
-        <li><a href="/upload">检测</a></li>
-        <li><a href="/rulesets">规则集</a></li>
-        <li><a href="/history">历史</a></li>
-      </ul>
-    </nav>
-  </header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">📊</div>
+        <div>
+          <div class="brand-title">数据质量</div>
+          <div class="brand-sub">监测平台</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="/" class="nav-item"><span class="nav-icon">🏠</span>首页</a>
+        <a href="/upload" class="nav-item"><span class="nav-icon">🚀</span>检测</a>
+        <a href="/rulesets" class="nav-item"><span class="nav-icon">📋</span>规则集</a>
+        <a href="/history" class="nav-item"><span class="nav-icon">📈</span>历史</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="footer-line">FastAPI + Jinja2</div>
+        <div class="footer-line dim">v0.3.0 · 配置驱动引擎</div>
+      </div>
+    </aside>
 
-  <main class="container">
-    {% if flash %}
-    <article class="flash flash-{{ flash.type }}">{{ flash.message }}</article>
-    {% endif %}
+    <main class="main">
+      <header class="topbar">
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+        <div class="topbar-right">
+          {% block topbar %}{% endblock %}
+        </div>
+      </header>
 
-    {% block content %}{% endblock %}
-  </main>
+      <div class="content">
+        {% if flash %}
+        <article class="flash flash-{{ flash.type }}">
+          <span class="flash-dot"></span>{{ flash.message }}
+        </article>
+        {% endif %}
 
-  <footer class="container">
-    <small>M4 Demo · FastAPI + Jinja2 · 配置驱动规则引擎</small>
-  </footer>
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
 </body>
 </html>

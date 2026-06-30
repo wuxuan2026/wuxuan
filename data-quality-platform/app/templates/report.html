@@ -1,79 +1,176 @@
 {% extends "base.html" %}
 {% block title %}检测报告 · {{ report.dataset }}{% endblock %}
+{% block page_title %}检测报告 · {{ report.dataset }}{% endblock %}
+{% block topbar %}
+  <a role="button" class="secondary" href="/history">← 历史</a>
+{% endblock %}
 {% block content %}
-<h1>检测报告 · {{ report.dataset }}</h1>
-<p>
-  <small>数据源：<code>{{ report.source_file }}</code> ｜ 规则集：<code>{{ report.ruleset_file }}</code> ｜ 检测耗时：{{ report.duration_ms }}ms</small>
-</p>
+{# ---- 元信息 ---- #}
+<div style="display:flex;gap:16px;flex-wrap:wrap;color:var(--text-dim);font-size:13px;margin-bottom:24px;">
+  <span>📄 数据源：<code>{{ report.source_file }}</code></span>
+  <span>📋 规则集：<code>{{ report.ruleset_file }}</code></span>
+  <span>⏱ 耗时 {{ report.duration_ms }}ms</span>
+  <span>🕒 {{ report.finished_at }}</span>
+</div>
 
-<article class="score-card score-{{ report.grade }}">
-  <header><strong>总分：{{ report.total_score }}（{{ report.grade }}）</strong></header>
-  <p>
-    {{ report.rules_passed }}/{{ report.rules_total }} 条规则通过，
-    {{ report.rules_failed }} 条失败。
-  </p>
-</article>
+{# ---- 仪表盘头：总分环图 + 维度 4 环图 ---- #}
+{% set score = report.total_score %}
+{% set grade_class = 'r-excellent' if report.grade == '优秀' else 'r-good' if report.grade == '良好' else 'r-fair' if report.grade == '合格' else 'r-poor' %}
+{% set circumference = 339.292 %}
+<div class="kpi-grid">
+  <div class="card" style="grid-column: span 1; text-align:center;">
+    <div class="card-title" style="margin-bottom:16px;">总分</div>
+    <div class="score-ring {{ grade_class }}" style="width:140px;height:140px;">
+      <svg width="140" height="140">
+        <circle class="ring-bg" cx="70" cy="70" r="54" fill="none" stroke-width="12"/>
+        <circle class="ring-fg" cx="70" cy="70" r="54" fill="none" stroke-width="12"
+                stroke-dasharray="{{ circumference }}"
+                stroke-dashoffset="{{ (circumference * (1 - score / 100))|round(2) }}"
+                stroke-linecap="round"/>
+      </svg>
+      <div class="ring-text">
+        <div class="ring-num">{{ score }}</div>
+        <div class="ring-label">{{ report.grade }}</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;font-size:13px;color:var(--text-dim);">
+      {{ report.rules_passed }} 通过 · {{ report.rules_failed }} 失败
+    </div>
+  </div>
 
-<h2>四维度评分</h2>
-<div class="grid">
   {% for dim, ds in dimension_labels.items() %}
-  <article>
-    <header><strong>{{ ds }}</strong></header>
-    {% set score = report.dimension_scores.get(dim, 100) %}
-    <p style="font-size:2em; margin:0;"><strong>{{ score }}</strong></p>
-    <progress value="{{ score }}" max="100"></progress>
-  </article>
+    {% set ds_score = report.dimension_scores.get(dim, 100) %}
+    {% set dim_class = 'r-excellent' if ds_score >= 90 else 'r-good' if ds_score >= 75 else 'r-fair' if ds_score >= 60 else 'r-poor' %}
+    <div class="card" style="text-align:center;">
+      <div class="card-title" style="margin-bottom:16px;">{{ ds }}</div>
+      <div class="score-ring {{ dim_class }}" style="width:120px;height:120px;">
+        <svg width="120" height="120">
+          <circle class="ring-bg" cx="60" cy="60" r="46" fill="none" stroke-width="10"/>
+          <circle class="ring-fg" cx="60" cy="60" r="46" fill="none" stroke-width="10"
+                  stroke-dasharray="289.027"
+                  stroke-dashoffset="{{ (289.027 * (1 - ds_score / 100))|round(2) }}"
+                  stroke-linecap="round"/>
+        </svg>
+        <div class="ring-text">
+          <div class="ring-num" style="font-size:22px;">{{ ds_score }}</div>
+          <div class="ring-label">/ 100</div>
+        </div>
+      </div>
+    </div>
   {% endfor %}
 </div>
 
-<h2>按严重等级</h2>
-<table>
-  <thead><tr><th>等级</th><th>规则数</th><th>失败数</th></tr></thead>
-  <tbody>
-    {% for sev, info in report.by_severity.items() %}
-    <tr>
-      <td><strong>{{ sev }}</strong></td>
-      <td>{{ info.total }}</td>
-      <td style="color:{% if info.failed %}red{% else %}green{% endif %};">{{ info.failed }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<h2>规则明细</h2>
-<table>
-  <thead>
-    <tr>
-      <th>ID</th><th>名称</th><th>维度</th><th>严重</th>
-      <th>失败/总数</th><th>失败率</th><th>状态</th><th>详情</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in report.results %}
-    <tr>
-      <td><code>{{ r.rule_id }}</code></td>
-      <td>{{ r.name }}</td>
-      <td>{{ r.dimension }}</td>
-      <td>{{ r.severity }}</td>
-      <td>{{ r.failed }} / {{ r.total }}</td>
-      <td>{{ '%.2f%%' % (r.failure_rate * 100) }}</td>
-      <td>
-        {% if r.error %}
-          <mark style="background:#ff6b6b">错误</mark>
-        {% elif r.passed %}
-          <mark style="background:#51cf66">通过</mark>
-        {% else %}
-          <mark style="background:#ffd43b">失败</mark>
+{# ---- 严重等级 + 维度贡献（堆叠条） ---- }
+<div class="kpi-grid-2">
+  <div class="card">
+    <h3>按严重等级</h3>
+    <table style="margin-top:12px;">
+      <thead>
+        <tr><th>等级</th><th>规则</th><th>失败</th><th>占比</th></tr>
+      </thead>
+      <tbody>
+        {% for sev, info in report.by_severity.items() %}
+        {% if info.total > 0 %}
+        <tr>
+          <td><span class="badge
+            {%- if sev == 'blocker' %} badge-red
+            {%- elif sev == 'major' %} badge-yellow
+            {%- else %} badge-blue{% endif %}">{{ sev }}</span></td>
+          <td>{{ info.total }}</td>
+          <td style="color:{% if info.failed %}var(--red){% else %}var(--green){% endif %};font-weight:500;">{{ info.failed }}</td>
+          <td>
+            <div style="background:var(--bg);border-radius:999px;overflow:hidden;height:6px;width:100px;display:inline-block;vertical-align:middle;">
+              <div style="background:{% if info.failed %}var(--red){% else %}var(--green){% endif %};height:100%;width:{{ (info.failed / info.total * 100)|round(1) }}%;"></div>
+            </div>
+            <small style="margin-left:8px;color:var(--text-dim);">{{ '%.0f%%' % (info.failed / info.total * 100) }}</small>
+          </td>
+        </tr>
         {% endif %}
-      </td>
-      <td><a href="/report/{{ report.id }}/rule/{{ r.rule_id }}">→ 详情</a></td>
-    </tr>
-    <tr>
-      <td colspan="8">
-        <small>{{ r.message }}</small>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>维度权重贡献</h3>
+    <p style="font-size:13px;">无规则的维度按 100 分计入。</p>
+    <div style="margin-top:16px;">
+      {% for dim, weight in [('completeness', 0.35), ('consistency', 0.25), ('conformity', 0.25), ('timeliness', 0.15)] %}
+      {% set dim_score = report.dimension_scores.get(dim, 100) %}
+      {% set contribution = dim_score * weight %}
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <span style="width:80px;font-size:13px;">{{ dimension_labels[dim] }}</span>
+        <div style="flex:1;background:var(--bg);border-radius:6px;overflow:hidden;height:24px;position:relative;">
+          <div style="background:linear-gradient(90deg,
+            {%- if dim_score >= 90 %}#10b981,#34d399
+            {%- elif dim_score >= 75 %}#3b82f6,#60a5fa
+            {%- elif dim_score >= 60 %}#f59e0b,#fbbf24
+            {%- else %}#ef4444,#f87171{% endif %});
+            height:100%;width:{{ dim_score }}%;transition:width 0.8s;"></div>
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:600;color:var(--text);">{{ dim_score }}</span>
+        </div>
+        <span style="width:50px;text-align:right;font-size:12px;color:var(--text-dim);">× {{ weight }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# ---- 规则明细 ---- #}
+<h2>规则明细（{{ report.rules_total }}）</h2>
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="rule-table">
+    <thead>
+      <tr>
+        <th style="width:120px;">ID</th>
+        <th>名称</th>
+        <th style="width:110px;">维度</th>
+        <th style="width:80px;">严重</th>
+        <th style="width:120px;">失败/总数</th>
+        <th style="width:90px;">状态</th>
+        <th style="width:80px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in report.results %}
+      {% set row_class = 'row-error' if r.error else 'row-pass' if r.passed else 'row-fail' %}
+      <tr class="{{ row_class }}">
+        <td><code>{{ r.rule_id }}</code></td>
+        <td>
+          <div class="rule-name">{{ r.name }}</div>
+          <div class="rule-msg">{{ r.message }}</div>
+        </td>
+        <td>
+          <span class="badge
+            {%- if r.dimension == 'completeness' %} badge-blue
+            {%- elif r.dimension == 'conformity' %} badge-yellow
+            {%- elif r.dimension == 'consistency' %} badge-purple
+            {%- else %} badge-green{% endif %}">
+            {{ dimension_labels.get(r.dimension, r.dimension) }}
+          </span>
+        </td>
+        <td><span class="badge
+          {%- if r.severity == 'blocker' %} badge-red
+          {%- elif r.severity == 'major' %} badge-yellow
+          {%- else %} badge-blue{% endif %}">{{ r.severity }}</span></td>
+        <td>
+          <strong style="color:{% if r.failed %}var(--red){% else %}var(--green){% endif %};">{{ r.failed }}</strong>
+          <span style="color:var(--text-dim);">/ {{ r.total }}</span>
+          <div style="font-size:11px;color:var(--text-dim);">{{ '%.2f%%' % (r.failure_rate * 100) }}</div>
+        </td>
+        <td>
+          {% if r.error %}
+            <span class="badge badge-red">错误</span>
+          {% elif r.passed %}
+            <span class="badge badge-green">通过</span>
+          {% else %}
+            <span class="badge badge-yellow">失败</span>
+          {% endif %}
+        </td>
+        <td><a href="/report/{{ report.id }}/rule/{{ r.rule_id }}" style="font-size:13px;">详情 →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

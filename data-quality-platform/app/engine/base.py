@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 import pandas as pd
 
-Dimension = Literal["completeness", "conformity", "consistency", "timeliness"]
+Dimension = Literal["completeness", "uniqueness", "conformity", "accuracy", "consistency", "timeliness"]
 Severity = Literal["blocker", "major", "minor"]
 
 

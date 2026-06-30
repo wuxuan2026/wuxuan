@@ -1,24 +1,38 @@
 {% extends "base.html" %}
-{% block title %}编辑 {{ name }} · 规则集{% endblock %}
+{% block title %}编辑 {{ name }} · 数据质量监测平台{% endblock %}
+{% block page_title %}编辑规则集 · {{ name }}{% endblock %}
+{% block topbar %}
+  <a role="button" class="secondary" href="/rulesets">取消</a>
+{% endblock %}
 {% block content %}
-<h1>编辑规则集 · {{ name }}</h1>
-<p><small>修改后保存。引擎会按 YAML 重新加载规则类型。注意：</small></p>
-<ul>
-  <li>已注册的规则类型：<code>not_null</code>、<code>no_duplicates</code>、<code>range</code>、<code>type</code>、<code>regex</code>、<code>enum</code>、<code>cross_field</code>、<code>primary_key</code>、<code>foreign_key</code>、<code>freshness</code>、<code>arrival</code></li>
-  <li><code>dimension</code> 必须是 completeness / conformity / consistency / timeliness 之一</li>
-</ul>
+<p style="font-size:13px;">已注册的规则类型：
+  <code style="background:var(--bg);">not_null</code> ·
+  <code style="background:var(--bg);">no_duplicates</code> ·
+  <code style="background:var(--bg);">range</code> ·
+  <code style="background:var(--bg);">type</code> ·
+  <code style="background:var(--bg);">regex</code> ·
+  <code style="background:var(--bg);">enum</code> ·
+  <code style="background:var(--bg);">cross_field</code> ·
+  <code style="background:var(--bg);">primary_key</code> ·
+  <code style="background:var(--bg);">foreign_key</code> ·
+  <code style="background:var(--bg);">freshness</code> ·
+  <code style="background:var(--bg);">arrival</code>
+</p>
+<p style="font-size:13px;">dimension 必须是 <code>completeness</code> / <code>conformity</code> / <code>consistency</code> / <code>timeliness</code> 之一。</p>
 
 {% if flash %}
-<article class="flash flash-{{ flash.type }}">{{ flash.message }}</article>
+<article class="flash flash-{{ flash.type }}">
+  <span class="flash-dot"></span>{{ flash.message }}
+</article>
 {% endif %}
 
 <form method="post" action="/rulesets/{{ name }}/edit">
-  <label>YAML 内容
-    <textarea name="content" rows="30" style="font-family: monospace;">{{ content }}</textarea>
-  </label>
-  <div class="grid">
-    <button type="submit">保存</button>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <textarea name="content" rows="28" style="font-family:var(--font-mono);font-size:13px;line-height:1.6;border:0;border-radius:0;padding:18px;background:#0f172a;color:#e2e8f0;min-height:520px;">{{ content }}</textarea>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
     <a role="button" class="secondary" href="/rulesets">取消</a>
+    <button type="submit">保存</button>
   </div>
 </form>
 {% endblock %}

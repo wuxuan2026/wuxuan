@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}检测 · 数据质量监测平台{% endblock %}
+{% block title %}运行检测 · 数据质量监测平台{% endblock %}
+{% block page_title %}运行检测{% endblock %}
 {% block content %}
-<h1>运行检测</h1>
-
-<div class="grid">
-  <article>
-    <header><strong>📁 使用 demo 数据</strong></header>
-    <form method="post" action="/checks/run">
+<div class="kpi-grid-2">
+  <div class="card">
+    <h3>📁 使用 demo 数据</h3>
+    <p style="font-size:13px;">直接对内置数据集跑检测。配套规则集已配置在 <code>data/rulesets/</code>。</p>
+    <form method="post" action="/checks/run" style="margin-top:20px;">
       <label>数据集
         <select name="dataset" required>
           {% for d in datasets %}
@@ -14,14 +14,14 @@
           {% endfor %}
         </select>
       </label>
-      <button type="submit">运行检测</button>
+      <button type="submit" style="width:100%;">运行检测</button>
     </form>
-    <p><small>将使用 <code>data/generated/&lt;name&gt;.csv</code> 与 <code>data/rulesets/&lt;name&gt;_rules.yaml</code></small></p>
-  </article>
+  </div>
 
-  <article>
-    <header><strong>📤 上传 CSV/Excel</strong></header>
-    <form method="post" action="/uploads" enctype="multipart/form-data">
+  <div class="card">
+    <h3>📤 上传 CSV/Excel</h3>
+    <p style="font-size:13px;">上传自己的数据并选一条规则集。支持 csv / txt / xls / xlsx。</p>
+    <form method="post" action="/uploads" enctype="multipart/form-data" style="margin-top:20px;">
       <label>数据文件
         <input type="file" name="file" accept=".csv,.txt,.xls,.xlsx,.xlsm" required>
       </label>
@@ -32,9 +32,17 @@
           {% endfor %}
         </select>
       </label>
-      <button type="submit">上传并检测</button>
+      <button type="submit" style="width:100%;">上传并检测</button>
     </form>
-    <p><small>上传文件将保存到 <code>data/uploads/</code></small></p>
-  </article>
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h3>💡 提示</h3>
+  <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;">
+    <li>外键规则（<code>foreign_key</code>）需要关联表，<code>orders</code> 规则集会自动加载 <code>customers.csv</code> 与 <code>arrivals.csv</code>。</li>
+    <li>上传的 CSV 不会自动有"关联表"，所以选 <code>orders</code> 规则集时外键规则会失败。</li>
+    <li>检测结果会自动写入历史数据库（<code>data/quality.db</code>）。</li>
+  </ul>
 </div>
 {% endblock %}

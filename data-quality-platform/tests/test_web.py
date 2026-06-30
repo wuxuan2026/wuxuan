@@ -97,8 +97,7 @@ def test_history_page_renders_after_run():
 def test_ruleset_edit_save_roundtrip():
     r = client.get("/rulesets/orders_rules/edit")
     assert r.status_code == 200
-    assert "YAML" in r.text
-    # 提交一个内容（不变）看保存是否成功
+    assert "编辑规则集" in r.text
     r2 = client.post(
         "/rulesets/orders_rules/edit",
         data={"content": (Path("data/rulesets/orders_rules.yaml").read_text(encoding="utf-8"))},

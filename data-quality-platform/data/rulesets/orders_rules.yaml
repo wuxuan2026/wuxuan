@@ -1,5 +1,5 @@
 dataset: orders
-description: 电商订单数据质量规则集（M2：完整性 + 规范性）
+description: 电商订单数据质量规则集（6 个维度）
 defaults:
   severity: major
 rules:
@@ -11,10 +11,10 @@ rules:
     severity: blocker
     name: 订单号不能为空
   - id: ord_002
-    type: no_duplicates
+    type: not_null
     dimension: completeness
-    columns: [order_id]
-    name: 订单号不能重复
+    column: customer_id
+    name: 客户 ID 不能为空
   - id: ord_003
     type: range
     dimension: completeness
@@ -22,23 +22,86 @@ rules:
     params: {min: 0, max: 100000}
     name: 订单金额应在 0~100000 之间
 
-  # —— 规范性 ——
+  # —— 唯一性 ——
   - id: ord_004
+    type: no_duplicates
+    dimension: uniqueness
+    columns: [order_id]
+    severity: blocker
+    name: 订单号不能重复
+  - id: ord_005
+    type: primary_key
+    dimension: uniqueness
+    columns: [order_id]
+    severity: blocker
+    name: 订单号为主键
+
+  # —— 规范性 ——
+  - id: ord_006
     type: regex
     dimension: conformity
     column: customer_email
     params: {pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'}
     name: 客户邮箱格式
-  - id: ord_005
+  - id: ord_007
     type: enum
     dimension: conformity
     column: order_status
     params:
       values: [pending, paid, shipped, delivered, cancelled]
     name: 订单状态枚举
-  - id: ord_006
+  - id: ord_008
     type: type
     dimension: conformity
     column: order_date
     params: {dtype: date}
     name: 订单日期类型
+
+  # —— 准确性 ——
+  - id: ord_009
+    type: sum_check
+    dimension: accuracy
+    columns: [paid_amount, refund_amount]
+    params:
+      target: order_amount
+      tol: 0.01
+      allow_partial: true
+    severity: blocker
+    name: 支付 + 退款 = 订单金额
+  - id: ord_010
+    type: statistical
+    dimension: accuracy
+    column: order_amount
+    params: {min: 0, max: 100000, k: 3}
+    name: 订单金额无异常（范围 + 3σ）
+
+  # —— 一致性 ——
+  - id: ord_011
+    type: cross_field
+    dimension: consistency
+    severity: blocker
+    params: {expr: "discount <= order_amount"}
+    name: 折扣不能超过订单金额
+  - id: ord_012
+    type: foreign_key
+    dimension: consistency
+    column: customer_id
+    params: {ref_table: customers, ref_column: customer_id}
+    name: customer_id 必须存在于 customers 表
+
+  # —— 时效性 ——
+  - id: ord_013
+    type: freshness
+    dimension: timeliness
+    column: order_date
+    params: {max_age_days: 3}
+    name: 订单数据最新不超过 3 天
+  - id: ord_014
+    type: arrival
+    dimension: timeliness
+    params:
+      arrivals_table: arrivals
+      expected_col: expected_arrival
+      actual_col: actual_arrival
+      tolerance_min: 30
+    name: 订单按时到达（容忍 30 分钟延迟）

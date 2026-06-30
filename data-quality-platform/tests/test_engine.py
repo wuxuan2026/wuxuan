@@ -8,6 +8,9 @@ from app.engine import ExecutionContext, RuleRunner, load_ruleset
 from app.engine.registry import REGISTRY, register
 from app.detectors import completeness  # noqa: F401  触发 @register
 from app.detectors import conformity  # noqa: F401
+from app.detectors import consistency  # noqa: F401
+from app.detectors import timeliness  # noqa: F401
+from app.detectors import accuracy  # noqa: F401
 
 
 @pytest.fixture
@@ -153,4 +156,4 @@ def test_load_yaml_ruleset():
     assert len(rules) >= 6
     for r in rules:
         assert r.id.startswith("ord_")
-        assert r.dimension in {"completeness", "conformity", "consistency", "timeliness"}
+        assert r.dimension in {"completeness", "uniqueness", "conformity", "accuracy", "consistency", "timeliness"}

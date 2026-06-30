@@ -90,12 +90,26 @@ def gen_orders(n: int = 500) -> pd.DataFrame:
         if random.random() < 0.01:
             order_date = "not-a-date"
 
+        # 业务字段：paid = amount - discount（仅当 discount <= amount 时）
+        if discount <= order_amount:
+            paid_amount = round(order_amount - discount, 2)
+        else:
+            paid_amount = 0.0  # discount 异常时不再计算 paid
+        # ~2% 概率：refund 不为零（一般在 0），构造 sum_check 失败
+        refund_amount = 0.0
+        if random.random() < 0.02:
+            refund_amount = round(random.uniform(1, 50), 2)
+            # 同时让 paid 少扣这块（破坏 paid + refund = amount）
+            paid_amount = max(0.0, paid_amount - refund_amount)
+
         rows.append({
             "order_id": order_id,
             "customer_id": customer_id,
             "order_date": order_date,
             "order_amount": order_amount,
             "discount": discount,
+            "paid_amount": paid_amount,
+            "refund_amount": refund_amount,
             "order_status": order_status,
             "customer_email": customer_email,
         })

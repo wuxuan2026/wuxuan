@@ -1,69 +1,102 @@
 {% extends "base.html" %}
 {% block title %}历史记录 · 数据质量监测平台{% endblock %}
+{% block page_title %}历史记录{% endblock %}
 {% block content %}
-<h1>历史记录</h1>
-<p><small>展示最近 100 次检测记录，按时间倒序。</small></p>
+<p style="font-size:14px;">展示最近 100 次检测记录，按时间倒序。</p>
 
 {% if runs %}
-<article>
-  <header><strong>总分趋势（按时间）</strong></header>
-  <div id="trend-chart" style="height: 280px; background: #f8f9fa; padding: 1rem; border-radius: 6px;">
-    <svg width="100%" height="240" id="trend-svg"></svg>
-  </div>
+<div class="card" style="margin-bottom:24px;">
+  <h3 style="margin-top:0;">📈 总分趋势</h3>
+  <div id="trend-chart" style="height:280px;"></div>
   <script>
     const points = {{ trend_json|safe }};
-    const svg = document.getElementById('trend-svg');
+    const host = document.getElementById('trend-chart');
     if (points.length === 0) {
-      svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#888">暂无数据</text>';
+      host.innerHTML = '<div class="empty">暂无数据</div>';
     } else {
-      const W = svg.clientWidth || 800, H = 240, pad = 40;
-      const xs = points.map((_, i) => pad + (W - 2*pad) * i / Math.max(1, points.length - 1));
-      const ys = points.map(p => H - pad - (H - 2*pad) * p.y / 100);
+      const W = host.clientWidth, H = 260, pad = 50, padR = 24;
+      const xs = points.map((_, i) => pad + (W - pad - padR) * i / Math.max(1, points.length - 1));
+      const ys = points.map(p => H - 30 - (H - 60) * p.y / 100);
+
+      // 渐变区
+      const grad = `linear-gradient(0deg, transparent, ${points[0]?.y >= 90 ? '#10b981' : '#6366f1'}22)`;
+
+      let svg = `<svg width="${W}" height="${H}" style="display:block;">`;
       // 网格
       for (let g = 0; g <= 4; g++) {
-        const y = pad + (H - 2*pad) * g / 4;
+        const y = 30 + (H - 60) * g / 4;
         const v = 100 - 25 * g;
-        svg.insertAdjacentHTML('beforeend',
-          `<line x1="${pad}" y1="${y}" x2="${W-pad}" y2="${y}" stroke="#dee2e6"/>
-           <text x="${pad - 6}" y="${y + 4}" text-anchor="end" fill="#888" font-size="11">${v}</text>`);
+        svg += `<line x1="${pad}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#e2e8f0" stroke-dasharray="2 4"/>`;
+        svg += `<text x="${pad - 8}" y="${y + 4}" text-anchor="end" fill="#94a3b8" font-size="11" font-family="Inter">${v}</text>`;
       }
       // 折线
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${xs[i]},${ys[i]}`).join(' ');
-      svg.insertAdjacentHTML('beforeend', `<path d="${path}" fill="none" stroke="#1971c2" stroke-width="2"/>`);
-      // 圆点
+      const area = path + ` L${xs[xs.length-1]},${H - 30} L${xs[0]},${H - 30} Z`;
+      svg += `<defs><linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></linearGradient></defs>`;
+      svg += `<path d="${area}" fill="url(#areaGrad)"/>`;
+      svg += `<path d="${path}" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linejoin="round"/>`;
+      // 圆点 + hover
       points.forEach((p, i) => {
-        const color = p.y >= 90 ? '#2f9e44' : p.y >= 75 ? '#1971c2' : p.y >= 60 ? '#f08c00' : '#e03131';
-        svg.insertAdjacentHTML('beforeend',
-          `<circle cx="${xs[i]}" cy="${ys[i]}" r="5" fill="${color}">
-             <title>${p.dataset} @ ${p.x}: ${p.y}</title>
-           </circle>`);
+        const color = p.y >= 90 ? '#10b981' : p.y >= 75 ? '#3b82f6' : p.y >= 60 ? '#f59e0b' : '#ef4444';
+        svg += `<g style="cursor:pointer;" onclick="location.href='/report/${i+1}'">
+                  <circle cx="${xs[i]}" cy="${ys[i]}" r="6" fill="white" stroke="${color}" stroke-width="2.5">
+                    <title>${p.dataset} @ ${p.x}: ${p.y}</title>
+                  </circle>
+                </g>`;
       });
+      // x 轴标签（最多 6 个）
+      const labelStep = Math.max(1, Math.ceil(points.length / 6));
+      points.forEach((p, i) => {
+        if (i % labelStep === 0 || i === points.length - 1) {
+          const time = p.x.split('T')[1] || p.x;
+          svg += `<text x="${xs[i]}" y="${H - 8}" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter">${time}</text>`;
+        }
+      });
+      svg += `</svg>`;
+      host.innerHTML = svg;
     }
   </script>
-</article>
+</div>
 
-<table>
-  <thead>
-    <tr><th>ID</th><th>时间</th><th>数据集</th><th>数据源</th><th>规则</th>
-        <th>总分</th><th>评级</th><th>通过/失败</th><th></th></tr>
-  </thead>
-  <tbody>
-    {% for r in runs %}
-    <tr>
-      <td><code>#{{ r.id }}</code></td>
-      <td><small>{{ r.created_at }}</small></td>
-      <td><strong>{{ r.dataset }}</strong></td>
-      <td><small>{{ r.source_file }}</small></td>
-      <td>{{ r.rules_total }}</td>
-      <td><strong>{{ r.total_score }}</strong></td>
-      <td>{{ r.grade }}</td>
-      <td>{{ r.rules_passed }} / {{ r.rules_failed }}</td>
-      <td><a href="/report/{{ r.id }}">查看</a></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card" style="padding:0;overflow:hidden;">
+  <table>
+    <thead>
+      <tr><th style="width:80px;">ID</th><th>时间</th><th>数据集</th><th>数据源</th>
+          <th style="width:80px;">规则</th><th style="width:100px;">总分</th>
+          <th style="width:80px;">评级</th><th>通过/失败</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for r in runs %}
+      <tr>
+        <td><code>#{{ r.id }}</code></td>
+        <td><small style="color:var(--text-dim);font-family:var(--font-mono);">{{ r.created_at }}</small></td>
+        <td><strong>{{ r.dataset }}</strong></td>
+        <td><small style="color:var(--text-dim);">{{ r.source_file }}</small></td>
+        <td>{{ r.rules_total }}</td>
+        <td><strong style="font-size:16px;">{{ r.total_score }}</strong></td>
+        <td><span class="badge
+          {%- if r.grade == '优秀' %} badge-green
+          {%- elif r.grade == '良好' %} badge-blue
+          {%- elif r.grade == '合格' %} badge-yellow
+          {%- else %} badge-red{% endif %}">{{ r.grade }}</span></td>
+        <td>
+          <span style="color:var(--green);">{{ r.rules_passed }} ✓</span>
+          <span style="color:var(--text-dim);">/</span>
+          <span style="color:{% if r.rules_failed %}var(--red){% else %}var(--text-dim){% endif %};">{{ r.rules_failed }} ✗</span>
+        </td>
+        <td><a href="/report/{{ r.id }}">查看 →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% else %}
-<p><em>还没有检测记录，去 <a href="/upload">检测</a> 跑一次吧。</em></p>
+<div class="empty">
+  <div style="font-size:48px;margin-bottom:12px;">📭</div>
+  还没有检测记录<br>
+  <a href="/upload" style="margin-top:16px;display:inline-block;">→ 立即开始第一次检测</a>
+</div>
 {% endif %}
 {% endblock %}

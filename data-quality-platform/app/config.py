@@ -16,11 +16,13 @@ DATABASE_PATH = BASE_DIR / "data" / "quality.db"
 # 失败样本展示上限
 SAMPLE_LIMIT = settings.sample_limit
 
-# 评分权重（可调）
+# 评分权重（可调）。6 维度平均 0.1666，可按业务侧重调整。
 DIMENSION_WEIGHTS = {
-    "completeness": 0.35,
-    "consistency": 0.25,
-    "conformity": 0.25,
+    "completeness": 0.20,
+    "uniqueness": 0.15,
+    "conformity": 0.15,
+    "accuracy": 0.20,
+    "consistency": 0.15,
     "timeliness": 0.15,
 }
 

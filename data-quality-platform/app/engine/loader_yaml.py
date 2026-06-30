@@ -46,3 +46,53 @@ def dump_ruleset(dataset: str, description: str, rules: list[dict[str, Any]]) ->
         allow_unicode=True,
         sort_keys=False,
     )
+
+
+def load_ruleset_raw(path: str | Path) -> dict[str, Any]:
+    """只解析 YAML，不实例化规则。用于编辑预览等只读场景。"""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"规则集文件不存在: {path}")
+    with path.open("r", encoding="utf-8") as f:
+        raw: dict[str, Any] = yaml.safe_load(f) or {}
+    raw.setdefault("dataset", path.stem)
+    raw.setdefault("description", "")
+    raw.setdefault("defaults", {})
+    raw.setdefault("rules", [])
+    return raw
+
+
+def rule_summary(item: dict[str, Any], default_severity: str = "major") -> dict[str, Any]:
+    """把单条 YAML 规则整理成表格行所需的字段。"""
+    columns = item.get("columns") or item.get("column")
+    if isinstance(columns, str):
+        columns_str = columns
+    elif isinstance(columns, list):
+        columns_str = ", ".join(str(c) for c in columns)
+    else:
+        columns_str = "—"
+
+    params = item.get("params") or {}
+    if isinstance(params, dict) and params:
+        params_str = ", ".join(f"{k}={_fmt(v)}" for k, v in params.items())
+    else:
+        params_str = "—"
+
+    return {
+        "id": str(item.get("id", "—")),
+        "name": str(item.get("name", "")) or str(item.get("id", "—")),
+        "type": str(item.get("type", "—")),
+        "dimension": str(item.get("dimension", "—")),
+        "severity": str(item.get("severity", default_severity)),
+        "columns": columns_str,
+        "params": params_str,
+    }
+
+
+def _fmt(v: Any) -> str:
+    """把 param 值渲染成短字符串（截断过长的列表/正则）。"""
+    if isinstance(v, str):
+        return v if len(v) <= 24 else v[:21] + "..."
+    if isinstance(v, list):
+        return "[" + ", ".join(str(x) for x in v[:4]) + ("]" if len(v) <= 4 else ", ...]")
+    return str(v)

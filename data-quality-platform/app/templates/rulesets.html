@@ -1,13 +1,101 @@
 {% extends "base.html" %}
 {% block title %}规则集 · 数据质量监测平台{% endblock %}
+{% block page_title %}规则集{% endblock %}
 {% block content %}
-<h1>规则集</h1>
-<p><small>规则集以 YAML 声明，运行时由引擎按 <code>type</code> 实例化对应规则类。</small></p>
+<p style="font-size:14px;">
+  规则集以 YAML 声明，运行时由引擎按 <code>type</code> 实例化对应规则类。
+  下面把 YAML 拆解成表格方便浏览；点"编辑"可在线修改源文件。
+</p>
 
-{% for it in items %}
-<article>
-  <header><strong>{{ it.name }}</strong> · <small><code>{{ it.path }}</code></small></header>
-  <pre><code>{{ it.content }}</code></pre>
-</article>
-{% endfor %}
+<div style="display:flex;flex-direction:column;gap:20px;">
+  {% for it in items %}
+  <div class="card">
+    <div class="card-header" style="margin-bottom:16px;">
+      <div>
+        <strong style="font-size:18px;">{{ it.name }}</strong>
+        {% if it.description %}
+        <span style="color:var(--text-dim);font-size:13px;margin-left:8px;">— {{ it.description }}</span>
+        {% endif %}
+        <div style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-top:4px;">{{ it.path }}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="badge">{{ it.rules|length }} 条规则</span>
+        <span class="badge">默认 {{ it.default_severity }}</span>
+        <a role="button" class="secondary" href="/rulesets/{{ it.name }}/edit" style="font-size:13px;">编辑</a>
+      </div>
+    </div>
+
+    {% if it.error %}
+    <article class="flash flash-error" style="margin:0;">
+      <span class="flash-dot"></span>YAML 解析失败：{{ it.error }}
+    </article>
+    {% endif %}
+
+    {# ---- 规则可视化表格 ---- #}
+    <div style="padding:0;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+      <table class="rule-table">
+        <thead>
+          <tr>
+            <th style="width:110px;">ID</th>
+            <th>名称</th>
+            <th style="width:140px;">类型</th>
+            <th style="width:90px;">维度</th>
+            <th style="width:80px;">严重</th>
+            <th style="width:160px;">列</th>
+            <th>参数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in it.rules %}
+          <tr>
+            <td><code>{{ r.id }}</code></td>
+            <td>
+              <div class="rule-name">{{ r.name }}</div>
+            </td>
+            <td>
+              <span class="badge badge-purple" style="font-family:var(--font-mono);font-size:11px;">{{ r.type }}</span>
+            </td>
+            <td>
+              <span class="badge
+                {%- if r.dimension == 'completeness' %} badge-blue
+                {%- elif r.dimension == 'uniqueness' %} badge-cyan
+                {%- elif r.dimension == 'conformity' %} badge-yellow
+                {%- elif r.dimension == 'accuracy' %} badge-orange
+                {%- elif r.dimension == 'consistency' %} badge-purple
+                {%- else %} badge-green{% endif %}">
+                {{ dimension_labels.get(r.dimension, r.dimension) }}
+              </span>
+            </td>
+            <td>
+              <span class="badge
+                {%- if r.severity == 'blocker' %} badge-red
+                {%- elif r.severity == 'major' %} badge-yellow
+                {%- else %} badge-blue{% endif %}">{{ r.severity }}</span>
+            </td>
+            <td><code style="font-size:12px;">{{ r.columns }}</code></td>
+            <td>
+              {% if r.params != '—' %}
+              <code style="font-size:12px;word-break:break-all;">{{ r.params }}</code>
+              {% else %}
+              <span style="color:var(--text-dim);">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="empty" style="padding:24px;">该规则集没有规则</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# ---- 折叠原始 YAML ---- #}
+    <details style="margin-top:12px;">
+      <summary style="cursor:pointer;color:var(--text-dim);font-size:13px;user-select:none;">
+        查看原始 YAML（{{ it.content|length }} 字符）
+      </summary>
+      <pre style="margin-top:12px;max-height:320px;overflow:auto;"><code>{{ it.content }}</code></pre>
+    </details>
+  </div>
+  {% endfor %}
+</div>
 {% endblock %}

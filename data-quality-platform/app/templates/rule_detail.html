@@ -1,42 +1,69 @@
 {% extends "base.html" %}
 {% block title %}规则 {{ rule.rule_id }} 详情{% endblock %}
+{% block page_title %}规则详情 · {{ rule.rule_id }}{% endblock %}
+{% block topbar %}
+  <a role="button" class="secondary" href="/report/{{ run_id }}">← 返回报告</a>
+{% endblock %}
 {% block content %}
-<h1>规则详情 · {{ rule.rule_id }}</h1>
-<p>
-  <small>
-    <a href="/report/{{ run_id }}">← 返回报告</a> ｜
-    数据集：<strong>{{ report.dataset }}</strong> ｜ run_id: #{{ run_id }}
-  </small>
-</p>
+<div style="display:flex;gap:8px;margin-bottom:16px;">
+  <span class="badge badge-blue">{{ dimension_labels.get(rule.dimension, rule.dimension) }}</span>
+  <span class="badge
+    {%- if rule.severity == 'blocker' %} badge-red
+    {%- elif rule.severity == 'major' %} badge-yellow
+    {%- else %} badge-blue{% endif %}">{{ rule.severity }}</span>
+  {% if rule.error %}
+    <span class="badge badge-red">错误</span>
+  {% elif rule.passed %}
+    <span class="badge badge-green">通过</span>
+  {% else %}
+    <span class="badge badge-yellow">失败</span>
+  {% endif %}
+</div>
 
-<article>
-  <header><strong>{{ rule.name }}</strong>
-    <span style="float:right;">
-      <mark>维度: {{ rule.dimension }}</mark>
-      <mark>严重: {{ rule.severity }}</mark>
-      {% if rule.error %}<mark style="background:#ff6b6b">错误</mark>
-      {% elif rule.passed %}<mark style="background:#51cf66">通过</mark>
-      {% else %}<mark style="background:#ffd43b">失败</mark>{% endif %}
-    </span>
-  </header>
-  <p><strong>结果：</strong> {{ rule.message }}</p>
-  <p><strong>数据：</strong> 共 {{ rule.total }} 条，失败 {{ rule.failed }} 条，失败率 {{ '%.2f%%' % (rule.failure_rate * 100) }}</p>
-  {% if rule.error %}<p><strong>错误：</strong><code>{{ rule.error }}</code></p>{% endif %}
-</article>
+<div class="card">
+  <h2 style="margin-top:0;">{{ rule.name }}</h2>
+  <p style="font-size:14px;">{{ rule.message }}</p>
 
+  <div class="kpi-grid-3" style="margin-top:24px;">
+    <div>
+      <div class="card-title">总数</div>
+      <div class="card-value" style="font-size:24px;">{{ rule.total }}</div>
+    </div>
+    <div>
+      <div class="card-title">失败</div>
+      <div class="card-value" style="font-size:24px;color:{% if rule.failed %}var(--red){% else %}var(--green){% endif %};">{{ rule.failed }}</div>
+    </div>
+    <div>
+      <div class="card-title">失败率</div>
+      <div class="card-value" style="font-size:24px;">{{ '%.2f%%' % (rule.failure_rate * 100) }}</div>
+    </div>
+  </div>
+
+  {% if rule.error %}
+  <div class="card" style="margin-top:16px;background:var(--red-soft);border-color:transparent;">
+    <strong>错误详情：</strong><code style="background:transparent;border:0;color:var(--red);">{{ rule.error }}</code>
+  </div>
+  {% endif %}
+</div>
+
+<h2>失败样本{% if rule.sample_failures %}（{{ rule.sample_failures|length }} 条）{% endif %}</h2>
 {% if rule.sample_failures %}
-<h2>失败样本（前 {{ rule.sample_failures|length }} 条）</h2>
-<table>
-  <thead>
-    <tr>{% for k in rule.sample_failures[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr>
-  </thead>
-  <tbody>
-    {% for s in rule.sample_failures %}
-    <tr>{% for v in s.values() %}<td><code>{{ v }}</code></td>{% endfor %}</tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card" style="padding:0;overflow:auto;">
+  <table>
+    <thead>
+      <tr>{% for k in rule.sample_failures[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for s in rule.sample_failures %}
+      <tr>{% for v in s.values() %}<td><code>{{ v }}</code></td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% else %}
-<p><em>无失败样本。</em></p>
+<div class="empty">
+  <div style="font-size:40px;margin-bottom:12px;">✨</div>
+  无失败样本
+</div>
 {% endif %}
 {% endblock %}

@@ -13,6 +13,8 @@ from app.detectors import completeness  # noqa: F401
 from app.detectors import conformity  # noqa: F401
 from app.detectors import consistency  # noqa: F401
 from app.detectors import timeliness  # noqa: F401
+from app.detectors import accuracy  # noqa: F401
+from app.engine.loader_yaml import load_ruleset_raw, rule_summary
 from app.engine.registry import REGISTRY
 from app.services import history_service
 
@@ -22,7 +24,9 @@ templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 DIMENSION_LABELS = {
     "completeness": "完整性",
+    "uniqueness": "唯一性",
     "conformity": "规范性",
+    "accuracy": "准确性",
     "consistency": "一致性",
     "timeliness": "时效性",
 }
@@ -52,6 +56,7 @@ def index(request: Request):
             "rule_types": sorted(REGISTRY.keys()),
             "datasets": _available_datasets(),
             "recent_runs": runs,
+            "latest": runs[0] if runs else None,
         },
     )
 
@@ -73,12 +78,33 @@ def upload(request: Request):
 def rulesets(request: Request):
     items = []
     for yp in sorted(RULESET_DIR.glob("*.yaml")):
-        text = yp.read_text(encoding="utf-8")
-        items.append({"name": yp.stem, "path": str(yp), "content": text})
+        try:
+            raw = load_ruleset_raw(yp)
+        except Exception as e:
+            items.append({
+                "name": yp.stem,
+                "path": str(yp),
+                "content": yp.read_text(encoding="utf-8"),
+                "error": str(e),
+                "rules": [],
+                "description": "",
+                "default_severity": "major",
+            })
+            continue
+        default_severity = (raw.get("defaults") or {}).get("severity", "major")
+        rule_rows = [rule_summary(r, default_severity) for r in raw.get("rules", [])]
+        items.append({
+            "name": yp.stem,
+            "path": str(yp),
+            "content": yp.read_text(encoding="utf-8"),
+            "description": raw.get("description", ""),
+            "default_severity": default_severity,
+            "rules": rule_rows,
+        })
     return templates.TemplateResponse(
         request,
         "rulesets.html",
-        {"items": items},
+        {"items": items, "dimension_labels": DIMENSION_LABELS},
     )
 
 
@@ -146,6 +172,7 @@ def report_rule_detail(request: Request, run_id: int, rule_id: str):
             "rule": rule_data,
             "run_id": run_id,
             "report": report_data,
+            "dimension_labels": DIMENSION_LABELS,
         },
     )
 
