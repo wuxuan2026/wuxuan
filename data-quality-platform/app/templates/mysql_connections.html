@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}MySQL 连接管理 · 数据质量监测平台{% endblock %}
+{% block page_title %}MySQL 连接管理{% endblock %}
+{% block topbar %}
+  <a role="button" href="/mysql/connections/new">+ 新增连接</a>
+{% endblock %}
+{% block content %}
+
+{% if request.query_params.get("error") == "name_required" %}
+<article class="flash flash-error"><span class="flash-dot"></span>连接名不能为空。</article>
+{% elif request.query_params.get("error") == "name_exists" %}
+<article class="flash flash-error"><span class="flash-dot"></span>连接名已存在。</article>
+{% elif request.query_params.get("error") == "not_found" %}
+<article class="flash flash-error"><span class="flash-dot"></span>连接不存在（可能已被删除）。</article>
+{% elif request.query_params.get("ok") == "created" %}
+<article class="flash flash-success"><span class="flash-dot"></span>连接已创建。</article>
+{% elif request.query_params.get("ok") == "updated" %}
+<article class="flash flash-success"><span class="flash-dot"></span>连接已更新。</article>
+{% elif request.query_params.get("ok") == "deleted" %}
+<article class="flash flash-success"><span class="flash-dot"></span>连接已删除。</article>
+{% endif %}
+
+<p style="font-size:14px;color:var(--text-dim);margin-bottom:16px;">
+  连接信息存储在 <code>data/mysql_connections.yaml</code>，密码用 Fernet 加密。
+  也可在 <code>.env</code> 里用 <code>MYSQL_<NAME>_*</code> 环境变量配置（优先级：YAML > 环境变量）。
+</p>
+
+{% if connections %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="rule-table">
+    <thead>
+      <tr>
+        <th style="width:120px;">名称</th>
+        <th>主机</th>
+        <th style="width:80px;">端口</th>
+        <th>数据库</th>
+        <th style="width:80px;">用户</th>
+        <th style="width:100px;">密码</th>
+        <th style="width:240px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in connections %}
+      <tr>
+        <td><strong><code>{{ c.name }}</code></strong></td>
+        <td><code>{{ c.host }}</code></td>
+        <td>{{ c.port }}</td>
+        <td><code>{{ c.database }}</code></td>
+        <td>{{ c.user }}</td>
+        <td>{{ c.password }}</td>
+        <td>
+          <button type="button" class="btn-test" data-name="{{ c.name }}" style="font-size:12px;padding:4px 10px;">测试连接</button>
+          <a role="button" class="secondary" href="/mysql/connections/{{ c.name }}/edit" style="font-size:12px;padding:4px 10px;">编辑</a>
+          <form method="post" action="/mysql/connections/{{ c.name }}/delete" style="display:inline;" onsubmit="return confirm('确定删除连接 {{ c.name }}？');">
+            <button type="submit" class="secondary" style="font-size:12px;padding:4px 10px;color:var(--red);">删除</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  <div style="font-size:40px;margin-bottom:12px;">🗄️</div>
+  还没有配置任何 MySQL 连接<br>
+  <a href="/mysql/connections/new" style="margin-top:16px;display:inline-block;">→ 新增第一个连接</a>
+</div>
+{% endif %}
+
+<script>
+document.querySelectorAll('.btn-test').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var name = btn.dataset.name;
+    btn.disabled = true;
+    btn.textContent = '测试中...';
+    fetch('/mysql/connections/' + encodeURIComponent(name) + '/test', {method: 'POST'})
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          btn.textContent = '✓ 连接成功';
+          btn.style.color = 'var(--green)';
+        } else {
+          btn.textContent = '✗ ' + (data.error || '失败').slice(0, 30);
+          btn.style.color = 'var(--red)';
+        }
+        setTimeout(function(){ btn.disabled = false; btn.textContent = '测试连接'; btn.style.color = ''; }, 4000);
+      })
+      .catch(function(e){
+        btn.textContent = '✗ 网络错误';
+        btn.style.color = 'var(--red)';
+        btn.disabled = false;
+      });
+  });
+});
+</script>
+
+<div class="card" style="margin-top:24px;">
+  <h3>💡 说明</h3>
+  <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;">
+    <li>密码用 Fernet 对称加密存到 <code>data/mysql_connections.yaml</code>。加密密钥在 <code>data/.secret_key</code>（首次自动生成）或环境变量 <code>SECRET_KEY</code>。</li>
+    <li>「测试连接」会真实连一次 MySQL，确认配置正确。</li>
+    <li>配置好后到 <a href="/upload">检测页</a>选连接、表名、规则集即可开始检测。</li>
+  </ul>
+</div>
+{% endblock %}

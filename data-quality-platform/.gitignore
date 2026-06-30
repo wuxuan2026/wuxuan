@@ -10,6 +10,10 @@ data/generated/*.csv
 data/*.db
 data/quality.db
 
+# MySQL 连接配置（含加密密码，禁止入库）
+data/mysql_connections.yaml
+data/.secret_key
+
 # Python
 __pycache__/
 *.py[cod]

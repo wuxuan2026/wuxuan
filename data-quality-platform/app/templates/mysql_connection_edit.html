@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}新增{% else %}编辑{% endif %}连接 · 数据质量监测平台{% endblock %}
+{% block page_title %}{% if is_new %}新增 MySQL 连接{% else %}编辑连接 · {{ conn.name }}{% endif %}{% endblock %}
+{% block topbar %}
+  <a role="button" class="secondary" href="/mysql/connections">取消</a>
+{% endblock %}
+{% block content %}
+
+<form method="post" action="{{ form_action }}" style="max-width:560px;">
+  <div class="card">
+    {% if is_new %}
+    <label>
+      连接名
+      <input type="text" name="name" value="{{ conn.name }}" placeholder="DEFAULT / BI / 生产库" required pattern="[A-Za-z_][A-Za-z0-9_]*">
+      <small style="color:var(--text-dim);">只能用字母数字下划线，用于在 /upload 页选择。</small>
+    </label>
+    {% else %}
+    <label>
+      连接名
+      <input type="text" value="{{ conn.name }}" disabled>
+      <input type="hidden" name="name" value="{{ conn.name }}">
+    </label>
+    {% endif %}
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+      <label>
+        主机
+        <input type="text" name="host" value="{{ conn.host }}" required placeholder="127.0.0.1">
+      </label>
+      <label>
+        端口
+        <input type="number" name="port" value="{{ conn.port }}" min="1" max="65535">
+      </label>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <label>
+        用户名
+        <input type="text" name="user" value="{{ conn.user }}" required>
+      </label>
+      <label>
+        数据库
+        <input type="text" name="database" value="{{ conn.database }}" required>
+      </label>
+    </div>
+
+    <label>
+      密码
+      <input type="password" name="password" value="{{ conn.password }}" placeholder="{% if not is_new %}留空保持不变{% else %}输入密码{% endif %}">
+      {% if not is_new %}
+      <small style="color:var(--text-dim);">显示为 <code>******</code> 时表示沿用原密码；重新输入会覆盖。</small>
+      {% endif %}
+    </label>
+
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <a role="button" class="secondary" href="/mysql/connections">取消</a>
+      <button type="submit" style="flex:1;">{% if is_new %}创建{% else %}保存{% endif %}</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

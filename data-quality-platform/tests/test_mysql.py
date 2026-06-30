@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -84,8 +85,11 @@ def test_build_url_missing_env_raises(monkeypatch):
     monkeypatch.delenv("MYSQL_DEFAULT_HOST", raising=False)
     monkeypatch.delenv("MYSQL_DEFAULT_USER", raising=False)
     monkeypatch.delenv("MYSQL_DEFAULT_DATABASE", raising=False)
+    # 确保没有 yaml 配置
+    import app.services.mysql_config_service as cfg_svc
+    monkeypatch.setattr(cfg_svc, "CONFIG_PATH", Path("/nonexistent/mysql.yaml"))
     from app.loaders.mysql import build_mysql_url
-    with pytest.raises(ValueError, match="缺少环境变量"):
+    with pytest.raises(ValueError, match="缺少配置"):
         build_mysql_url()
 
 

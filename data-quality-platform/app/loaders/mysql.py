@@ -52,15 +52,24 @@ def _validate_table_name(table: str) -> None:
 
 
 def _resolve_connection(conn_name: str | None) -> dict[str, Any]:
-    """从环境变量读取连接参数。
+    """读取连接参数：优先 YAML 存储，否则环境变量。
 
     期望格式：
-        MYSQL_<NAME>_HOST
-        MYSQL_<NAME>_PORT (可选, 默认 3306)
-        MYSQL_<NAME>_USER
-        MYSQL_<NAME>_PASSWORD
-        MYSQL_<NAME>_DATABASE
+        YAML: data/mysql_connections.yaml（推荐，UI 可编辑）
+        ENV : MYSQL_<NAME>_HOST/PORT/USER/PASSWORD/DATABASE
     """
+    # 1) 优先从 YAML 配置服务拿（UI 配置的连接）
+    try:
+        from app.services.mysql_config_service import get_connection_for_loader
+        # 防止循环 import：直接调函数
+        from app.services import mysql_config_service as cfg_svc
+        cfg = cfg_svc.get_connection_for_loader(conn_name)
+        if cfg and cfg.get("host"):
+            return cfg
+    except Exception:
+        pass
+
+    # 2) fallback：环境变量
     if conn_name is None:
         conn_name = "DEFAULT"
     prefix = f"MYSQL_{conn_name.upper()}"
@@ -74,7 +83,7 @@ def _resolve_connection(conn_name: str | None) -> dict[str, Any]:
     missing = [k for k in ("host", "user", "database") if not cfg[k]]
     if missing:
         raise ValueError(
-            f"连接 {conn_name!r} 缺少环境变量: {prefix}_{', '.join(m.upper() for m in missing)}"
+            f"连接 {conn_name!r} 缺少配置: 可能是 YAML 中没有，环境变量 {prefix}_{', '.join(m.upper() for m in missing)} 也缺失"
         )
     return cfg
 
@@ -91,13 +100,18 @@ def build_mysql_url(conn_name: str | None = None) -> str:
 
 
 def list_connections() -> list[dict[str, Any]]:
-    """列出所有已配置的 MySQL 连接。
-
-    返回 [{name, host, port, database}, ...]
-    """
+    """列出所有已配置的 MySQL 连接（YAML 优先，环境变量补充）。"""
     allowed = _get_allowed_connections()
     names: set[str] = set(allowed)
-    # 也扫描环境变量 MYSQL_<NAME>_HOST 自动发现
+    # 1) 扫描 YAML 配置
+    try:
+        from app.services import mysql_config_service as cfg_svc
+        for c in cfg_svc.list_connections_with_secret():
+            if c.get("name"):
+                names.add(c["name"])
+    except Exception:
+        pass
+    # 2) 也扫描环境变量
     for k in os.environ:
         if k.endswith("_HOST") and k.startswith("MYSQL_"):
             prefix = k[len("MYSQL_"):-len("_HOST")]
