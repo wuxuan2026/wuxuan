@@ -42,6 +42,8 @@ class CheckService:
         report = build_report(summary)
         report["source_file"] = str(csv_path.relative_to(GENERATED_DIR.parent.parent))
         report["ruleset_file"] = str(ruleset_path.relative_to(RULESET_DIR.parent.parent))
+        report["row_count"] = int(len(df))
+        report["columns"] = [str(c) for c in df.columns]
         report["id"] = history_service.save_report(report)
         return report
 
@@ -70,6 +72,8 @@ class CheckService:
         report["source_file"] = str(csv_path)
         report["ruleset_file"] = str(ruleset_path)
         report["uploaded_filename"] = str(csv_path.name)
+        report["row_count"] = int(len(df))
+        report["columns"] = [str(c) for c in df.columns]
         report["id"] = history_service.save_report(report)
         return report
 

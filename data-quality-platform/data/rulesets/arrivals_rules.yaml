@@ -1,28 +1,40 @@
-dataset: arrivals
-description: 数据到达记录规则集
-defaults:
-  severity: major
-rules:
-  - id: arr_001
-    type: not_null
-    dimension: completeness
-    column: order_id
-    severity: blocker
-    name: 订单号不能为空
-  - id: arr_002
-    type: no_duplicates
-    dimension: completeness
-    columns: [order_id]
-    name: 订单号不能重复
-  - id: arr_003
-    type: type
-    dimension: conformity
-    column: expected_arrival
-    params: {dtype: datetime}
-    name: 预期到达时间类型
-  - id: arr_004
-    type: type
-    dimension: conformity
-    column: actual_arrival
-    params: {dtype: datetime}
-    name: 实际到达时间类型
+dataset: arrivals
+description: 数据到达记录规则集
+defaults:
+  severity: major
+rules:
+  - id: arr_001
+    type: not_null
+    dimension: completeness
+    severity: blocker
+    name: 订单号不能为空
+    column: order_id
+  - id: arr_002
+    type: no_duplicates
+    dimension: completeness
+    severity: major
+    name: 订单号不能重复
+    columns:
+      - order_id
+  - id: arr_003
+    type: type
+    dimension: conformity
+    severity: major
+    name: 预期到达时间类型
+    column: expected_arrival
+    params:
+      dtype: datetime
+  - id: arr_004
+    type: type
+    dimension: conformity
+    severity: major
+    name: 实际到达时间类型
+    column: actual_arrival
+    params:
+      dtype: datetime
+  - id: ord_005
+    type: not_null
+    dimension: completeness
+    severity: major
+    name: 预期到达时间
+    column: d

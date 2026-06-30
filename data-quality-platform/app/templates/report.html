@@ -9,6 +9,12 @@
 <div style="display:flex;gap:16px;flex-wrap:wrap;color:var(--text-dim);font-size:13px;margin-bottom:24px;">
   <span>📄 数据源：<code>{{ report.source_file }}</code></span>
   <span>📋 规则集：<code>{{ report.ruleset_file }}</code></span>
+  {% if report.row_count is defined %}
+  <span>📊 数据条数：<strong style="color:var(--text);">{{ report.row_count }}</strong> 条</span>
+  {% if report.columns %}
+  <span style="flex-basis:100%;">📋 列（{{ report.columns|length }}）：{% for c in report.columns %}<code style="margin-right:6px;">{{ c }}</code>{% endfor %}</span>
+  {% endif %}
+  {% endif %}
   <span>⏱ 耗时 {{ report.duration_ms }}ms</span>
   <span>🕒 {{ report.finished_at }}</span>
 </div>
@@ -95,7 +101,7 @@
     <h3>维度权重贡献</h3>
     <p style="font-size:13px;">无规则的维度按 100 分计入。</p>
     <div style="margin-top:16px;">
-      {% for dim, weight in [('completeness', 0.35), ('consistency', 0.25), ('conformity', 0.25), ('timeliness', 0.15)] %}
+      {% for dim, weight in [('completeness', 0.20), ('uniqueness', 0.15), ('conformity', 0.15), ('accuracy', 0.20), ('consistency', 0.15), ('timeliness', 0.15)] %}
       {% set dim_score = report.dimension_scores.get(dim, 100) %}
       {% set contribution = dim_score * weight %}
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
