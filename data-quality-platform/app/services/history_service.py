@@ -35,6 +35,7 @@ def save_report(report: dict) -> int:
                 run_id=run.id,
                 rule_id=r["rule_id"],
                 name=r["name"],
+                type=r.get("type", ""),
                 dimension=r["dimension"],
                 severity=r["severity"],
                 passed=bool(r["passed"]),
@@ -130,6 +131,7 @@ def _run_to_report(r: CheckRun) -> dict[str, Any]:
             {
                 "rule_id": rr.rule_id,
                 "name": rr.name,
+                "type": rr.type or "",
                 "dimension": rr.dimension,
                 "severity": rr.severity,
                 "passed": rr.passed,

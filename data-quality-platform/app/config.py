@@ -33,6 +33,31 @@ SEVERITY_WEIGHTS = {
     "minor": 1,
 }
 
+# 严重等级的中文标签（前端显示用）
+SEVERITY_LABELS = {
+    "blocker": "阻断",
+    "major": "主要",
+    "minor": "次要",
+}
+
+# 规则类型的中文标签（key=注册表 type 名，value=展示用中文）
+# 未知类型会原样展示英文（不报错），所以新加规则类型不强制改这里。
+RULE_TYPE_LABELS = {
+    "not_null": "非空检查",
+    "no_duplicates": "无重复",
+    "range": "值域范围",
+    "primary_key": "主键唯一",
+    "type": "类型检查",
+    "regex": "正则匹配",
+    "enum": "枚举值",
+    "sum_check": "求和校验",
+    "statistical": "统计异常",
+    "cross_field": "跨字段比较",
+    "foreign_key": "外键引用",
+    "freshness": "新鲜度",
+    "arrival": "到达及时",
+}
+
 # 评分分级
 def grade_of(score: float) -> str:
     if score >= 90:

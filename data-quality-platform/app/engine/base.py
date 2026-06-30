@@ -19,10 +19,11 @@ class RuleResult:
     name: str
     dimension: str
     severity: str
-    passed: bool
-    total: int
-    failed: int
-    failure_rate: float
+    type: str = ""  # 规则类型（注册表里的 key），用于报告页中文展示
+    passed: bool = False
+    total: int = 0
+    failed: int = 0
+    failure_rate: float = 0.0
     sample_failures: list[dict] = field(default_factory=list)
     message: str = ""
     error: str | None = None

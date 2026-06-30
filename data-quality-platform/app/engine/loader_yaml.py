@@ -33,9 +33,12 @@ def load_ruleset(path: str | Path) -> tuple[str, str, list[Rule]]:
         kwargs.pop("type", None)
         kwargs.setdefault("severity", default_severity)
         try:
-            rules.append(cls(**kwargs))
+            rule = cls(**kwargs)
         except TypeError as e:
             raise ValueError(f"实例化规则 {item.get('id', '?')} ({item.get('type')}) 失败: {e}") from e
+        # 记录 type（Rule 基类没有这个字段，但报告页和编辑页需要）
+        rule.type = item["type"]
+        rules.append(rule)
     return dataset, description, rules
 
 

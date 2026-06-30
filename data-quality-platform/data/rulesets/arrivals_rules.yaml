@@ -37,4 +37,4 @@ rules:
     dimension: completeness
     severity: major
     name: 预期到达时间
-    column: d
+    column: 预期到达时间

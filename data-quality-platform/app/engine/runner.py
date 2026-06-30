@@ -54,6 +54,8 @@ class RuleRunner:
                 )
             if r.passed:
                 passed += 1
+            # 把规则的 type 也带到结果里（报告页可读）
+            r.type = getattr(rule, "type", "")
             results.append(r)
         finished = datetime.now()
         return RunSummary(

@@ -8,7 +8,13 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.config import GENERATED_DIR, RULESET_DIR
+from app.config import (
+    GENERATED_DIR,
+    RULE_TYPE_LABELS,
+    RULESET_DIR,
+    SEVERITY_LABELS,
+    SEVERITY_WEIGHTS,
+)
 from app.detectors import completeness  # noqa: F401
 from app.detectors import conformity  # noqa: F401
 from app.detectors import consistency  # noqa: F401
@@ -30,6 +36,13 @@ DIMENSION_LABELS = {
     "consistency": "一致性",
     "timeliness": "时效性",
 }
+
+# 全局 Jinja 函数：拿中文标签
+templates.env.globals["RULE_TYPE_LABELS"] = RULE_TYPE_LABELS
+templates.env.globals["SEVERITY_LABELS"] = SEVERITY_LABELS
+templates.env.globals["SEVERITY_WEIGHTS"] = SEVERITY_WEIGHTS
+templates.env.filters.setdefault("severity_label", lambda x: SEVERITY_LABELS.get(x, x))
+templates.env.filters.setdefault("type_label", lambda x: RULE_TYPE_LABELS.get(x, x))
 
 
 def _available_datasets() -> list[dict]:

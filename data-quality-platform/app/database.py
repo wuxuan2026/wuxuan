@@ -58,6 +58,7 @@ class RuleResultRow(Base):
     run_id = Column(Integer, ForeignKey("check_runs.id"), nullable=False, index=True)
     rule_id = Column(String(64), nullable=False)
     name = Column(String(128), nullable=False)
+    type = Column(String(32), default="")  # 规则类型（注册表 key），用于报告中文展示
     dimension = Column(String(32), nullable=False)
     severity = Column(String(16), nullable=False)
     passed = Column(Boolean, nullable=False)
@@ -86,17 +87,28 @@ _EXPECTED_COLUMNS: list[tuple[str, str]] = [
     ("columns_json", "JSON"),
 ]
 
+# rule_results 表需要补的列（按 (列名, ddl)）
+_EXPECTED_RULE_RESULT_COLUMNS: list[tuple[str, str]] = [
+    ("type", "VARCHAR(32) DEFAULT ''"),
+]
+
 
 def _migrate() -> None:
-    """检测 check_runs 是否缺新列，缺则 ALTER TABLE ADD COLUMN。
+    """检测 check_runs / rule_results 是否缺新列，缺则 ALTER TABLE ADD COLUMN。
     SQLite 不支持 IF NOT EXISTS for ADD COLUMN，所以先用 inspect 查。
     """
     insp = inspect(engine)
-    if "check_runs" not in insp.get_table_names():
-        return
-    existing = {c["name"] for c in insp.get_columns("check_runs")}
+    tables = insp.get_table_names()
     with engine.begin() as conn:
-        for col, ddl in _EXPECTED_COLUMNS:
-            if col not in existing:
-                log.info("迁移：ALTER TABLE check_runs ADD COLUMN %s", col)
-                conn.execute(text(f"ALTER TABLE check_runs ADD COLUMN {col} {ddl}"))
+        if "check_runs" in tables:
+            existing = {c["name"] for c in insp.get_columns("check_runs")}
+            for col, ddl in _EXPECTED_COLUMNS:
+                if col not in existing:
+                    log.info("迁移：ALTER TABLE check_runs ADD COLUMN %s", col)
+                    conn.execute(text(f"ALTER TABLE check_runs ADD COLUMN {col} {ddl}"))
+        if "rule_results" in tables:
+            existing = {c["name"] for c in insp.get_columns("rule_results")}
+            for col, ddl in _EXPECTED_RULE_RESULT_COLUMNS:
+                if col not in existing:
+                    log.info("迁移：ALTER TABLE rule_results ADD COLUMN %s", col)
+                    conn.execute(text(f"ALTER TABLE rule_results ADD COLUMN {col} {ddl}"))

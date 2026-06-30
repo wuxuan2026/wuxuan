@@ -81,7 +81,7 @@
           <td><span class="badge
             {%- if sev == 'blocker' %} badge-red
             {%- elif sev == 'major' %} badge-yellow
-            {%- else %} badge-blue{% endif %}">{{ sev }}</span></td>
+            {%- else %} badge-blue{% endif %}" title="{{ sev }}">{{ sev | severity_label }}</span></td>
           <td>{{ info.total }}</td>
           <td style="color:{% if info.failed %}var(--red){% else %}var(--green){% endif %};font-weight:500;">{{ info.failed }}</td>
           <td>
@@ -130,8 +130,10 @@
       <tr>
         <th style="width:120px;">ID</th>
         <th>名称</th>
-        <th style="width:110px;">维度</th>
+        <th style="width:120px;">类型</th>
+        <th style="width:90px;">维度</th>
         <th style="width:80px;">严重</th>
+        <th style="width:70px;">权重</th>
         <th style="width:120px;">失败/总数</th>
         <th style="width:90px;">状态</th>
         <th style="width:80px;"></th>
@@ -139,6 +141,7 @@
     </thead>
     <tbody>
       {% for r in report.results %}
+      {% set sev_w = SEVERITY_WEIGHTS.get(r.severity, 1) %}
       {% set row_class = 'row-error' if r.error else 'row-pass' if r.passed else 'row-fail' %}
       <tr class="{{ row_class }}">
         <td><code>{{ r.rule_id }}</code></td>
@@ -147,18 +150,28 @@
           <div class="rule-msg">{{ r.message }}</div>
         </td>
         <td>
+          <span class="badge badge-purple" title="{{ r.type }}">{{ r.type | type_label }}</span>
+        </td>
+        <td>
           <span class="badge
             {%- if r.dimension == 'completeness' %} badge-blue
+            {%- elif r.dimension == 'uniqueness' %} badge-cyan
             {%- elif r.dimension == 'conformity' %} badge-yellow
+            {%- elif r.dimension == 'accuracy' %} badge-orange
             {%- elif r.dimension == 'consistency' %} badge-purple
             {%- else %} badge-green{% endif %}">
             {{ dimension_labels.get(r.dimension, r.dimension) }}
           </span>
         </td>
-        <td><span class="badge
-          {%- if r.severity == 'blocker' %} badge-red
-          {%- elif r.severity == 'major' %} badge-yellow
-          {%- else %} badge-blue{% endif %}">{{ r.severity }}</span></td>
+        <td>
+          <span class="badge
+            {%- if r.severity == 'blocker' %} badge-red
+            {%- elif r.severity == 'major' %} badge-yellow
+            {%- else %} badge-blue{% endif %}" title="{{ r.severity }}">{{ r.severity | severity_label }}</span>
+        </td>
+        <td>
+          <strong style="color:{% if sev_w == 3 %}var(--red){% elif sev_w == 2 %}var(--yellow){% else %}var(--blue){% endif %};">×{{ sev_w }}</strong>
+        </td>
         <td>
           <strong style="color:{% if r.failed %}var(--red){% else %}var(--green){% endif %};">{{ r.failed }}</strong>
           <span style="color:var(--text-dim);">/ {{ r.total }}</span>

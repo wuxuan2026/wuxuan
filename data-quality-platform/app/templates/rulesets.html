@@ -41,6 +41,7 @@
             <th style="width:140px;">类型</th>
             <th style="width:90px;">维度</th>
             <th style="width:80px;">严重</th>
+            <th style="width:70px;">权重</th>
             <th style="width:160px;">列</th>
             <th>参数</th>
           </tr>
@@ -53,7 +54,7 @@
               <div class="rule-name">{{ r.name }}</div>
             </td>
             <td>
-              <span class="badge badge-purple" style="font-family:var(--font-mono);font-size:11px;">{{ r.type }}</span>
+              <span class="badge badge-purple" title="{{ r.type }}">{{ r.type | type_label }}</span>
             </td>
             <td>
               <span class="badge
@@ -70,7 +71,10 @@
               <span class="badge
                 {%- if r.severity == 'blocker' %} badge-red
                 {%- elif r.severity == 'major' %} badge-yellow
-                {%- else %} badge-blue{% endif %}">{{ r.severity }}</span>
+                {%- else %} badge-blue{% endif %}" title="{{ r.severity }}">{{ r.severity | severity_label }}</span>
+            </td>
+            <td>
+              <strong style="font-family:var(--font-mono);color:{% if SEVERITY_WEIGHTS.get(r.severity, 1) == 3 %}var(--red){% elif SEVERITY_WEIGHTS.get(r.severity, 1) == 2 %}var(--yellow){% else %}var(--blue){% endif %};">×{{ SEVERITY_WEIGHTS.get(r.severity, 1) }}</strong>
             </td>
             <td><code style="font-size:12px;">{{ r.columns }}</code></td>
             <td>
