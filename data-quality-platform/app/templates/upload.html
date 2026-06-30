@@ -2,6 +2,19 @@
 {% block title %}运行检测 · 数据质量监测平台{% endblock %}
 {% block page_title %}运行检测{% endblock %}
 {% block content %}
+
+{% if request.query_params.get("error") %}
+<article class="flash flash-error">
+  <span class="flash-dot"></span>
+  检测失败：
+  {% if request.query_params.get("error") == "internal" %}
+    服务器内部错误（请查看 uvicorn 控制台的 traceback）。
+  {% else %}
+    {{ request.query_params.get("error") }}
+  {% endif %}
+</article>
+{% endif %}
+
 <div class="kpi-grid-2">
   <div class="card">
     <h3>📁 使用 demo 数据</h3>
@@ -9,6 +22,7 @@
     <form method="post" action="/checks/run" style="margin-top:20px;">
       <label>数据集
         <select name="dataset" required>
+          <option value="" disabled selected>-- 请选择数据集 --</option>
           {% for d in datasets %}
           <option value="{{ d.name }}">{{ d.name }}</option>
           {% endfor %}
@@ -27,6 +41,7 @@
       </label>
       <label>规则集
         <select name="ruleset" required>
+          <option value="" disabled selected>-- 请选择规则集 --</option>
           {% for r in rulesets %}
           <option value="{{ r }}">{{ r }}</option>
           {% endfor %}

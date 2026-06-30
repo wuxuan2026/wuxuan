@@ -108,23 +108,43 @@ def rulesets(request: Request):
     )
 
 
+def _resolve_ruleset_path(name: str) -> Path | None:
+    """按 name 找规则集文件。支持 orders / orders_rules 两种写法。"""
+    candidates = [
+        RULESET_DIR / f"{name}.yaml",
+        RULESET_DIR / f"{name}_rules.yaml",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
+
+
 @router.get("/rulesets/{name}/edit", response_class=HTMLResponse)
 def ruleset_edit(request: Request, name: str):
-    path = RULESET_DIR / f"{name}.yaml"
-    if not path.exists():
+    path = _resolve_ruleset_path(name)
+    if not path:
         return RedirectResponse(url="/rulesets", status_code=303)
+    # 路由参数显示用去掉 _rules 后缀的短名
+    short_name = name[:-6] if name.endswith("_rules") else name
     return templates.TemplateResponse(
         request,
         "ruleset_edit.html",
-        {"name": name, "content": path.read_text(encoding="utf-8")},
+        {
+            "name": short_name,
+            "form_name": name,  # 用于 form action（文件实际名）
+            "content": path.read_text(encoding="utf-8"),
+            "rule_types": sorted(REGISTRY.keys()),
+        },
     )
 
 
 @router.post("/rulesets/{name}/edit")
 def ruleset_edit_save(request: Request, name: str, content: str = Form(...)):
-    path = RULESET_DIR / f"{name}.yaml"
-    if not path.exists():
+    path = _resolve_ruleset_path(name)
+    if not path:
         return RedirectResponse(url="/rulesets", status_code=303)
+    short_name = name[:-6] if name.endswith("_rules") else name
     # 简单 YAML 语法校验（不能 parse 就回写）
     try:
         import yaml
@@ -133,7 +153,13 @@ def ruleset_edit_save(request: Request, name: str, content: str = Form(...)):
         return templates.TemplateResponse(
             request,
             "ruleset_edit.html",
-            {"name": name, "content": content, "flash": {"type": "error", "message": f"YAML 解析失败: {e}"}},
+            {
+                "name": short_name,
+                "form_name": name,
+                "content": content,
+                "rule_types": sorted(REGISTRY.keys()),
+                "flash": {"type": "error", "message": f"YAML 解析失败: {e}"},
+            },
         )
     path.write_text(content, encoding="utf-8")
     return RedirectResponse(url="/rulesets", status_code=303)

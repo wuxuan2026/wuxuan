@@ -3,3 +3,4 @@ from app.detectors import completeness  # noqa: F401
 from app.detectors import conformity  # noqa: F401
 from app.detectors import consistency  # noqa: F401
 from app.detectors import timeliness  # noqa: F401
+from app.detectors import accuracy  # noqa: F401
