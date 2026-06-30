@@ -9,7 +9,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import (
-    GENERATED_DIR,
     RULE_TYPE_LABELS,
     RULESET_DIR,
     SEVERITY_LABELS,
@@ -45,18 +44,10 @@ templates.env.filters.setdefault("severity_label", lambda x: SEVERITY_LABELS.get
 templates.env.filters.setdefault("type_label", lambda x: RULE_TYPE_LABELS.get(x, x))
 
 
-def _available_datasets() -> list[dict]:
-    out = []
-    if RULESET_DIR.exists():
-        for yp in sorted(RULESET_DIR.glob("*_rules.yaml")):
-            name = yp.stem.replace("_rules", "")
-            csv = GENERATED_DIR / f"{name}.csv"
-            out.append({
-                "name": name,
-                "yaml": str(yp.relative_to(yp.parents[1])),
-                "csv": str(csv.relative_to(csv.parents[2])) if csv.exists() else "(未生成)",
-            })
-    return out
+def _available_rulesets() -> list[str]:
+    if not RULESET_DIR.exists():
+        return []
+    return sorted(p.stem for p in RULESET_DIR.glob("*.yaml"))
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -67,7 +58,8 @@ def index(request: Request):
         "index.html",
         {
             "rule_types": sorted(REGISTRY.keys()),
-            "datasets": _available_datasets(),
+            "rulesets": _available_rulesets(),
+            "ruleset_count": len(_available_rulesets()),
             "recent_runs": runs,
             "latest": runs[0] if runs else None,
         },
@@ -76,13 +68,11 @@ def index(request: Request):
 
 @router.get("/upload", response_class=HTMLResponse)
 def upload(request: Request):
-    rulesets = sorted(p.stem for p in RULESET_DIR.glob("*.yaml"))
     return templates.TemplateResponse(
         request,
         "upload.html",
         {
-            "datasets": [d["name"] for d in _available_datasets()],
-            "rulesets": rulesets,
+            "rulesets": _available_rulesets(),
         },
     )
 
@@ -186,8 +176,7 @@ def report(request: Request, run_id: int):
             request,
             "upload.html",
             {
-                "datasets": [d["name"] for d in _available_datasets()],
-                "rulesets": [],
+                "rulesets": _available_rulesets(),
                 "flash": {"type": "warning", "message": f"找不到 run_id={run_id} 的报告"},
             },
         )

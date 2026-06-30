@@ -1,4 +1,4 @@
-"""检测路由：触发一次检测并跳转到报告页（带 run_id）。"""
+"""检测路由：用户上传文件后触发检测，跳转到报告页（带 run_id）。"""
 from __future__ import annotations
 
 import logging
@@ -17,19 +17,12 @@ service = CheckService()
 log = logging.getLogger("checks")
 
 
-@router.post("/checks/run")
-def run_check(request: Request, dataset: str = Form(...)):
-    try:
-        report = service.run_for_dataset(dataset)
-    except FileNotFoundError as e:
-        log.warning("checks/run 数据集=%s 报错: %s", dataset, e)
-        return RedirectResponse(
-            url=f"/upload?error={_enc(str(e))}", status_code=303,
-        )
-    except Exception:
-        log.exception("checks/run 数据集=%s 异常", dataset)
-        return RedirectResponse(url="/upload?error=internal", status_code=303)
-    return RedirectResponse(url=f"/report/{report.get('id')}", status_code=303)
+def _resolve_ruleset_path(name: str) -> Path | None:
+    """按 name 找规则集文件。支持 orders / orders_rules 两种写法。"""
+    for p in (RULESET_DIR / f"{name}.yaml", RULESET_DIR / f"{name}_rules.yaml"):
+        if p.exists():
+            return p
+    return None
 
 
 @router.post("/uploads")
@@ -46,7 +39,9 @@ async def upload_and_check(
         with dest.open("wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        ruleset_path = RULESET_DIR / f"{ruleset}.yaml"
+        ruleset_path = _resolve_ruleset_path(ruleset)
+        if ruleset_path is None:
+            raise FileNotFoundError(f"规则集不存在: {RULESET_DIR / f'{ruleset}.yaml'}")
         try:
             report = service.run_for_uploaded(
                 dataset=Path(filename).stem,

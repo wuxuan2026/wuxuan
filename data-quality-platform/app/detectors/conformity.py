@@ -55,11 +55,13 @@ class TypeRule(Rule):
         failed_idx = failed_idx & ~null_mask
         failed = int(failed_idx.sum())
         msg = f"列 {col} 有 {failed}/{total} 条不符合 {dtype} 类型"
+        samples, _meta = self._sample(ctx, failed_idx) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, failed_idx) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
     @staticmethod
@@ -103,11 +105,13 @@ class RegexRule(Rule):
         failed = int(failed_idx.sum())
         total = len(ctx.df)
         msg = f"列 {col} 有 {failed}/{total} 条不符合正则 {pattern!r}"
+        samples, _meta = self._sample(ctx, failed_idx) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, failed_idx) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
 
@@ -134,9 +138,11 @@ class EnumRule(Rule):
         failed = int(failed_idx.sum())
         total = len(ctx.df)
         msg = f"列 {col} 有 {failed}/{total} 条不在枚举 {values} 中"
+        samples, _meta = self._sample(ctx, failed_idx) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, failed_idx) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )

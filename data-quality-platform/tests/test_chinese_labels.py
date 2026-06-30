@@ -43,8 +43,8 @@ def test_report_page_shows_chinese_type():
     resp = c.get(f"/report/{r['id']}")
     assert resp.status_code == 200
     text = _decode(resp)
-    # 报告里至少一种类型中文（orders 里有 not_null / sum_check 等）
-    for label in ("非空检查", "求和校验", "正则匹配", "枚举值", "类型检查", "外键引用"):
+    # 报告里至少一种类型中文（orders 单文件版规则集有 not_null / sum_check 等）
+    for label in ("非空检查", "求和校验", "正则匹配", "枚举值", "类型检查"):
         assert label in text, f"报告页缺少类型中文标签: {label}"
     # 严重等级：orders_rules.yaml 里只有 blocker 和 major
     assert "阻断" in text, "报告页缺少严重等级中文标签: 阻断"
@@ -97,6 +97,7 @@ def test_rule_type_persists_in_db():
     r = _run_and_get_report()
     with SessionLocal() as s:
         rows = s.query(RuleResultRow).filter_by(run_id=r["id"]).all()
-        assert len(rows) == 14
+        # 删 demo 后 orders 规则集 12 条
+        assert len(rows) == 12
         for row in rows:
             assert row.type, f"{row.rule_id} 在 DB 里 type 为空"

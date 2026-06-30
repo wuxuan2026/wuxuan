@@ -23,11 +23,13 @@ class NotNullRule(Rule):
         total = len(ctx.df)
         failed = int(mask.sum())
         msg = f"列 {col} 有 {failed}/{total} 条缺失" if failed else f"列 {col} 无缺失"
+        samples, _meta = self._sample(ctx, mask) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, mask) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
 
@@ -46,11 +48,13 @@ class NoDuplicatesRule(Rule):
         failed = int(dup_mask.sum())
         cols_str = ", ".join(self.columns)
         msg = f"主键 {cols_str} 有 {failed} 条重复" if failed else f"主键 {cols_str} 唯一"
+        samples, _meta = self._sample(ctx, dup_mask) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, dup_mask) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
 
@@ -80,9 +84,11 @@ class RangeRule(Rule):
         total = len(ctx.df)
         failed = int(bad.sum())
         msg = f"列 {col} 有 {failed}/{total} 条超出范围 [{min_v}, {max_v}]"
+        samples, _meta = self._sample(ctx, bad) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, bad) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )

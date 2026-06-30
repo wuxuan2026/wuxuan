@@ -27,11 +27,13 @@ class CrossFieldRule(Rule):
         total = len(ctx.df)
         failed = int(bad.sum())
         msg = f"跨字段表达式 {expr!r} 不满足 {failed}/{total} 条"
+        samples, _meta = self._sample(ctx, bad) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, bad) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
 
@@ -59,11 +61,13 @@ class PrimaryKeyUniqueRule(Rule):
             if failed
             else f"主键 {self.columns} 唯一且非空"
         )
+        samples, _meta = self._sample(ctx, dup) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, dup) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
 
@@ -112,9 +116,11 @@ class ForeignKeyRule(Rule):
             if failed
             else f"外键 {col}->{ref_table}.{ref_col} 全部命中"
         )
+        samples, _meta = self._sample(ctx, failed_idx) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, failed_idx) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )

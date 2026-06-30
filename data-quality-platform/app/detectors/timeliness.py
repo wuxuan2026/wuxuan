@@ -97,9 +97,11 @@ class ArrivalRule(Rule):
         # sample 时回到原 orders 表上找行。merge 可能引入重复索引，用 reindex 安全对齐。
         bad_by_pos = pd.Series(bad.to_numpy(), index=merged.index)
         bad_mask = bad_by_pos.reindex(ctx.df.index, fill_value=False).astype(bool)
+        samples, _meta = self._sample(ctx, bad_mask) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, bad_mask) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )

@@ -5,7 +5,7 @@
   <a role="button" href="/upload">+ 新建检测</a>
 {% endblock %}
 {% block content %}
-{# ---- KPI 卡片：最近一次检测 + 总规则数 + 数据集数 + 规则类型数 ---- #}
+{# ---- KPI 卡片：最近一次检测 + 总规则数 + 规则类型数 + 检测次数 ---- #}
 <div class="kpi-grid">
   <div class="card">
     <div class="card-header">
@@ -24,38 +24,20 @@
     <small style="color:var(--text-dim)">{% if latest %}{{ latest.dataset }} · {{ latest.created_at }}{% else %}暂无数据{% endif %}</small>
   </div>
   <div class="card">
-    <div class="card-header"><span class="card-title">数据集</span></div>
-    <div class="card-value">{{ datasets|length }}</div>
-    <small style="color:var(--text-dim)">已配置规则集</small>
+    <div class="card-header"><span class="card-title">规则集</span></div>
+    <div class="card-value">{{ rulesets|length if rulesets is defined else ruleset_count|default(0) }}</div>
+    <small style="color:var(--text-dim)">已配置</small>
   </div>
   <div class="card">
     <div class="card-header"><span class="card-title">规则类型</span></div>
     <div class="card-value">{{ rule_types|length }}</div>
-    <small style="color:var(--text-dim)">覆盖 4 个维度</small>
+    <small style="color:var(--text-dim)">覆盖 6 个维度</small>
   </div>
   <div class="card">
     <div class="card-header"><span class="card-title">检测次数</span></div>
     <div class="card-value">{{ recent_runs|length }}</div>
     <small style="color:var(--text-dim)">最近 10 条记录</small>
   </div>
-</div>
-
-{# ---- 数据集 ---- #}
-<h2>数据集</h2>
-<div class="dataset-grid">
-  {% for d in datasets %}
-  <div class="dataset-card">
-    <div class="name">{{ d.name }}</div>
-    <div class="path">
-      {{ d.csv }}<br>
-      ↳ {{ d.yaml }}
-    </div>
-    <form method="post" action="/checks/run">
-      <input type="hidden" name="dataset" value="{{ d.name }}">
-      <button type="submit" style="width:100%">运行检测</button>
-    </form>
-  </div>
-  {% endfor %}
 </div>
 
 {# ---- 最近检测时间线 ---- #}
@@ -108,7 +90,9 @@
     <h3>覆盖维度</h3>
     <table style="margin-top:12px;">
       <tr><td><span class="badge badge-blue">completeness</span></td><td>完整性</td><td style="color:var(--text-dim);">缺失/重复/值域</td></tr>
+      <tr><td><span class="badge badge-cyan">uniqueness</span></td><td>唯一性</td><td style="color:var(--text-dim);">主键/重复</td></tr>
       <tr><td><span class="badge badge-yellow">conformity</span></td><td>规范性</td><td style="color:var(--text-dim);">类型/正则/枚举</td></tr>
+      <tr><td><span class="badge badge-orange">accuracy</span></td><td>准确性</td><td style="color:var(--text-dim);">求和校验/统计异常</td></tr>
       <tr><td><span class="badge badge-purple">consistency</span></td><td>一致性</td><td style="color:var(--text-dim);">跨字段/主键/外键</td></tr>
       <tr><td><span class="badge badge-green">timeliness</span></td><td>时效性</td><td style="color:var(--text-dim);">新鲜度/到达及时</td></tr>
     </table>

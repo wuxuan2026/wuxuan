@@ -67,11 +67,13 @@ class SumCheckRule(Rule):
             f"{'+'.join(src_cols)} 之和应等于 {target}（容差 {tol}），"
             f"共 {failed}/{total} 条不满足"
         )
+        samples, _meta = self._sample(ctx, failed_idx) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, failed_idx) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )
 
 
@@ -128,9 +130,11 @@ class StatisticalRule(Rule):
 
         failed = int(bad.sum())
         msg = f"列 {col} 有 {failed}/{total} 条异常（违反 {'/'.join(bounds_msgs) or '无约束'}）"
+        samples, _meta = self._sample(ctx, bad) if failed else ([], {"id_columns": [], "check_columns": []})
         return self._make_result(
             total=total,
             failed=failed,
             message=msg,
-            sample_failures=self._sample(ctx, bad) if failed else [],
+            sample_failures=samples,
+            sample_meta=_meta,
         )

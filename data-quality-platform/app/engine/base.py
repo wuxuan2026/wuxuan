@@ -25,6 +25,7 @@ class RuleResult:
     failed: int = 0
     failure_rate: float = 0.0
     sample_failures: list[dict] = field(default_factory=list)
+    sample_meta: dict = field(default_factory=dict)  # {id_columns, check_columns}，标识/检测列分组
     message: str = ""
     error: str | None = None
 
@@ -87,6 +88,7 @@ class Rule(ABC):
         failed: int,
         message: str = "",
         sample_failures: list[dict] | None = None,
+        sample_meta: dict | None = None,
     ) -> RuleResult:
         total = max(0, int(total))
         failed = max(0, min(int(failed), total))
@@ -101,6 +103,7 @@ class Rule(ABC):
             failed=failed,
             failure_rate=rate,
             sample_failures=sample_failures or [],
+            sample_meta=sample_meta or {},
             message=message,
         )
 
@@ -109,19 +112,69 @@ class Rule(ABC):
         s = ctx.df[column].astype(str)
         return s.str.strip().eq("") | s.str.lower().isin({"none", "null", "nan"})
 
-    def _sample(self, ctx: ExecutionContext, mask: pd.Series, n: int | None = None) -> list[dict]:
+    def _sample(self, ctx: ExecutionContext, mask: pd.Series, n: int | None = None) -> tuple[list[dict], dict]:
+        """收集失败样本：(samples, meta)。
+
+        meta 字段：
+          - id_columns: 标识列（用于定位记录）
+          - check_columns: 检测列（规则涉及）
+        """
         from app.config import SAMPLE_LIMIT
 
         if n is None:
             n = SAMPLE_LIMIT
         rows = ctx.df[mask].head(n)
-        cols = self.columns or list(ctx.df.columns)
+
+        check_cols = list(self.columns) if self.columns else []
+        id_cols = self._pick_identifier_columns(ctx)
+
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for c in id_cols + check_cols:
+            if c not in seen and c in ctx.df.columns:
+                seen.add(c)
+                ordered.append(c)
+
         out = []
         for idx, row in rows.iterrows():
-            item = {"row": int(idx) + 2}  # +2：跳过 header，第一行数据 row=2
-            for c in cols:
+            item: dict[str, Any] = {"row": int(idx) + 2}
+            for c in ordered:
                 if c in row.index:
                     val = row.get(c)
                     item[c] = "" if pd.isna(val) else str(val)
             out.append(item)
-        return out
+        meta = {"id_columns": id_cols, "check_columns": check_cols}
+        return out, meta
+
+    def _pick_identifier_columns(self, ctx: ExecutionContext) -> list[str]:
+        """根据 YAML params 或列名启发式，找 1-3 个标识列。"""
+        # 1) YAML 显式
+        declared = self.params.get("identifier") or self.params.get("identifiers")
+        if declared:
+            if isinstance(declared, str):
+                return [declared] if declared in ctx.df.columns else []
+            if isinstance(declared, list):
+                return [c for c in declared if c in ctx.df.columns]
+
+        # 2) 启发式：列名含 id 且唯一比例高
+        candidates: list[tuple[str, float]] = []
+        n = max(1, len(ctx.df))
+        for col in ctx.df.columns:
+            low = col.lower()
+            if "id" not in low:
+                continue
+            s = ctx.df[col].astype(str)
+            unique_ratio = s.nunique(dropna=True) / n
+            if unique_ratio >= 0.5:
+                candidates.append((col, unique_ratio))
+        candidates.sort(key=lambda x: -x[1])
+        if candidates:
+            return [candidates[0][0]]
+
+        # 3) 数据集第 1 个列
+        first = ctx.df.columns[0] if len(ctx.df.columns) else None
+        return [first] if first else []
+
+
+# 让 _pick_identifier_columns 在样本很少（uniqueness=1.0）时不报错的常量
+_ = pd.DataFrame()  # noqa: F401  (保持 pd 在 base.py 已 import，供子类使用)

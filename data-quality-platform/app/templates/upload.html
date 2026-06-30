@@ -17,22 +17,6 @@
 
 <div class="kpi-grid-2">
   <div class="card">
-    <h3>📁 使用 demo 数据</h3>
-    <p style="font-size:13px;">直接对内置数据集跑检测。配套规则集已配置在 <code>data/rulesets/</code>。</p>
-    <form method="post" action="/checks/run" style="margin-top:20px;">
-      <label>数据集
-        <select name="dataset" required>
-          <option value="" disabled selected>-- 请选择数据集 --</option>
-          {% for d in datasets %}
-          <option value="{{ d.name }}">{{ d.name }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <button type="submit" style="width:100%;">运行检测</button>
-    </form>
-  </div>
-
-  <div class="card">
     <h3>📤 上传 CSV/Excel</h3>
     <p style="font-size:13px;">上传自己的数据并选一条规则集。支持 csv / txt / xls / xlsx。</p>
     <form method="post" action="/uploads" enctype="multipart/form-data" style="margin-top:20px;">
@@ -50,14 +34,14 @@
       <button type="submit" style="width:100%;">上传并检测</button>
     </form>
   </div>
-</div>
 
-<div class="card" style="margin-top:24px;">
-  <h3>💡 提示</h3>
-  <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;">
-    <li>外键规则（<code>foreign_key</code>）需要关联表，<code>orders</code> 规则集会自动加载 <code>customers.csv</code> 与 <code>arrivals.csv</code>。</li>
-    <li>上传的 CSV 不会自动有"关联表"，所以选 <code>orders</code> 规则集时外键规则会失败。</li>
-    <li>检测结果会自动写入历史数据库（<code>data/quality.db</code>）。</li>
-  </ul>
+  <div class="card">
+    <h3>💡 提示</h3>
+    <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;">
+      <li>请上传与规则集字段匹配的 CSV/Excel 文件。</li>
+      <li>规则集可在 <a href="/rulesets">规则集页面</a> 查看和编辑。</li>
+      <li>检测结果会自动写入历史数据库（<code>data/quality.db</code>）。</li>
+    </ul>
+  </div>
 </div>
 {% endblock %}

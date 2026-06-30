@@ -36,6 +36,7 @@ def save_report(report: dict) -> int:
                 rule_id=r["rule_id"],
                 name=r["name"],
                 type=r.get("type", ""),
+                sample_meta_json=r.get("sample_meta") or {},
                 dimension=r["dimension"],
                 severity=r["severity"],
                 passed=bool(r["passed"]),
@@ -141,6 +142,7 @@ def _run_to_report(r: CheckRun) -> dict[str, Any]:
                 "message": rr.message,
                 "error": rr.error,
                 "sample_failures": rr.sample_failures or [],
+                "sample_meta": rr.sample_meta_json or {},
             }
             for rr in r.rule_results
         ],

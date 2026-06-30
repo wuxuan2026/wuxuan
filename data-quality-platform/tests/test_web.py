@@ -39,18 +39,37 @@ def test_rulesets_page_lists_yaml():
 
 
 def test_run_check_then_report():
-    r = client.post("/checks/run", data={"dataset": "orders"}, follow_redirects=False)
-    assert r.status_code in (302, 303)
-    # 跳转到 /report/{id}
-    loc = r.headers.get("location", "")
-    assert loc.startswith("/report/")
-    r2 = client.get(loc)
-    assert r2.status_code == 200
-    assert "检测报告" in r2.text
-    assert "完整性" in r2.text
-    assert "规范性" in r2.text
-    assert "一致性" in r2.text
-    assert "时效性" in r2.text
+    """端到端：上传 CSV 后检测 → 跳转到报告页。"""
+    import tempfile
+    csv = (
+        "order_id,customer_id,order_date,order_amount,discount,paid_amount,refund_amount,order_status,customer_email\n"
+        "O000001,C00001,2026-06-29,100.0,10.0,90.0,0.0,paid,a@b.com\n"
+        "O000002,C00002,2026-06-29,200.0,20.0,180.0,0.0,paid,a@b.com\n"
+    )
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8") as f:
+        f.write(csv)
+        tmp = f.name
+    try:
+        with open(tmp, "rb") as fp:
+            r = client.post(
+                "/uploads",
+                files={"file": ("orders.csv", fp, "text/csv")},
+                data={"ruleset": "orders"},
+                follow_redirects=False,
+            )
+        assert r.status_code in (302, 303)
+        loc = r.headers.get("location", "")
+        assert loc.startswith("/report/")
+        r2 = client.get(loc)
+        assert r2.status_code == 200
+        assert "检测报告" in r2.text
+        assert "完整性" in r2.text
+        assert "规范性" in r2.text
+        assert "一致性" in r2.text
+        assert "时效性" in r2.text
+    finally:
+        import os
+        os.unlink(tmp)
 
 
 def test_report_unknown_id_redirects():

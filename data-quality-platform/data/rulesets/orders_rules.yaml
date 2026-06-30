@@ -1,5 +1,5 @@
 dataset: orders
-description: 电商订单数据质量规则集（6 个维度）
+description: 电商订单数据质量规则集（6 个维度，单文件适用版）
 defaults:
   severity: major
 rules:
@@ -82,26 +82,11 @@ rules:
     severity: blocker
     params: {expr: "discount <= order_amount"}
     name: 折扣不能超过订单金额
-  - id: ord_012
-    type: foreign_key
-    dimension: consistency
-    column: customer_id
-    params: {ref_table: customers, ref_column: customer_id}
-    name: customer_id 必须存在于 customers 表
 
   # —— 时效性 ——
-  - id: ord_013
+  - id: ord_012
     type: freshness
     dimension: timeliness
     column: order_date
     params: {max_age_days: 3}
     name: 订单数据最新不超过 3 天
-  - id: ord_014
-    type: arrival
-    dimension: timeliness
-    params:
-      arrivals_table: arrivals
-      expected_col: expected_arrival
-      actual_col: actual_arrival
-      tolerance_min: 30
-    name: 订单按时到达（容忍 30 分钟延迟）

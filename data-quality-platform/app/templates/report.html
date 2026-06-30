@@ -19,7 +19,7 @@
   <span>🕒 {{ report.finished_at }}</span>
 </div>
 
-{# ---- 仪表盘头：总分环图 + 维度 4 环图 ---- #}
+{# ---- 仪表盘头：总分环图 + 维度 6 环图 ---- #}
 {% set score = report.total_score %}
 {% set grade_class = 'r-excellent' if report.grade == '优秀' else 'r-good' if report.grade == '良好' else 'r-fair' if report.grade == '合格' else 'r-poor' %}
 {% set circumference = 339.292 %}
@@ -66,7 +66,7 @@
   {% endfor %}
 </div>
 
-{# ---- 严重等级 + 维度贡献（堆叠条） ---- }
+{# ---- 严重等级 + 维度贡献（堆叠条） ---- #}
 <div class="kpi-grid-2">
   <div class="card">
     <h3>按严重等级</h3>
@@ -122,7 +122,7 @@
   </div>
 </div>
 
-{# ---- 规则明细 ---- #}
+{# ---- 规则明细（可展开失败样本） ---- #}
 <h2>规则明细（{{ report.rules_total }}）</h2>
 <div class="card" style="padding:0;overflow:hidden;">
   <table class="rule-table">
@@ -186,10 +186,147 @@
             <span class="badge badge-yellow">失败</span>
           {% endif %}
         </td>
-        <td><a href="/report/{{ report.id }}/rule/{{ r.rule_id }}" style="font-size:13px;">详情 →</a></td>
+        <td>
+          {% if r.sample_failures %}
+          <a href="javascript:void(0)" class="toggle-failures" data-target="fail-{{ r.rule_id }}" style="font-size:13px;">展开样本</a>
+          {% else %}
+          <a href="/report/{{ report.id }}/rule/{{ r.rule_id }}" style="font-size:13px;">详情 →</a>
+          {% endif %}
+        </td>
       </tr>
+
+      {# 失败样本展开行 #}
+      {% if r.sample_failures %}
+      <tr id="fail-{{ r.rule_id }}" class="detail-row" style="display:none;">
+        <td colspan="9" style="padding:0 18px 18px;">
+          <div style="background:var(--bg);border-radius:8px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <strong style="font-size:13px;">失败样本（前 {{ r.sample_failures|length }} 条）</strong>
+              <a href="/report/{{ report.id }}/rule/{{ r.rule_id }}" style="font-size:12px;">查看完整明细 →</a>
+            </div>
+            <div style="overflow:auto;">
+              <table class="sample-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="width:60px;vertical-align:middle;">行号</th>
+                    {% set meta = r.sample_meta or {} %}
+                    {% set id_cols = meta.get('id_columns', []) %}
+                    {% set check_cols = meta.get('check_columns', []) %}
+                    {% if id_cols %}
+                    <th colspan="{{ id_cols|length }}" class="grp-id">唯一值</th>
+                    {% endif %}
+                    {% if check_cols %}
+                    <th colspan="{{ check_cols|length }}" class="grp-check">检测字段</th>
+                    {% endif %}
+                  </tr>
+                  <tr>
+                    {% for col in id_cols %}<th>{{ col }}</th>{% endfor %}
+                    {% for col in check_cols %}<th>{{ col }}</th>{% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in r.sample_failures %}
+                  <tr class="fail-row">
+                    <td><span class="row-num">{{ row.row }}</span></td>
+                    {% for col in id_cols %}
+                    <td class="cell-id"><code>{{ row[col] if row[col] != '' else '（空）' }}</code></td>
+                    {% endfor %}
+                    {% for col in check_cols %}
+                    <td class="cell-check"><span class="{% if row[col] == '' or row[col] is none %}cell-empty{% endif %}">{{ row[col] if row[col] != '' else '（空）' }}</span></td>
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+{# ---- 失败数据汇总 ---- #}
+{% set failed_rules = report.results | selectattr('failed', 'gt', 0) | list %}
+{% if failed_rules %}
+<h2 style="margin-top:32px;">❌ 失败数据明细（{{ failed_rules|length }} 条规则）</h2>
+<div style="display:flex;flex-direction:column;gap:18px;">
+  {% for r in failed_rules %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <strong>{{ r.rule_id }}</strong>
+        <span style="margin-left:8px;">{{ r.name }}</span>
+        <span class="badge
+          {%- if r.severity == 'blocker' %} badge-red
+          {%- elif r.severity == 'major' %} badge-yellow
+          {%- else %} badge-blue{% endif %}"
+          style="margin-left:10px;">{{ r.severity | severity_label }}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-dim);">
+        失败 <strong style="color:var(--red);">{{ r.failed }}</strong> / {{ r.total }}
+      </div>
+    </div>
+    <div style="padding:16px;overflow:auto;">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">{{ r.message }}</div>
+      {% if r.sample_failures %}
+      <table class="sample-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:60px;vertical-align:middle;">行号</th>
+            {% set meta = r.sample_meta or {} %}
+            {% set id_cols = meta.get('id_columns', []) %}
+            {% set check_cols = meta.get('check_columns', []) %}
+            {% if id_cols %}
+            <th colspan="{{ id_cols|length }}" class="grp-id">唯一值</th>
+            {% endif %}
+            {% if check_cols %}
+            <th colspan="{{ check_cols|length }}" class="grp-check">检测字段</th>
+            {% endif %}
+          </tr>
+          <tr>
+            {% for col in id_cols %}<th>{{ col }}</th>{% endfor %}
+            {% for col in check_cols %}<th>{{ col }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in r.sample_failures %}
+          <tr class="fail-row">
+            <td><span class="row-num">{{ row.row }}</span></td>
+            {% for col in id_cols %}
+            <td class="cell-id"><code>{{ row[col] if row[col] != '' else '（空）' }}</code></td>
+            {% endfor %}
+            {% for col in check_cols %}
+            <td class="cell-check"><span class="{% if row[col] == '' or row[col] is none %}cell-empty{% endif %}">{{ row[col] if row[col] != '' else '（空）' }}</span></td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="font-size:13px;color:var(--text-dim);">该规则未返回失败样本。</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+document.querySelectorAll('.toggle-failures').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var target = document.getElementById(btn.dataset.target);
+    if (!target) return;
+    if (target.style.display === 'none') {
+      target.style.display = 'table-row';
+      btn.textContent = '收起样本';
+    } else {
+      target.style.display = 'none';
+      btn.textContent = '展开样本';
+    }
+  });
+});
+</script>
 {% endblock %}

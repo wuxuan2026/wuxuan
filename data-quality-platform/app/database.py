@@ -59,6 +59,7 @@ class RuleResultRow(Base):
     rule_id = Column(String(64), nullable=False)
     name = Column(String(128), nullable=False)
     type = Column(String(32), default="")  # 规则类型（注册表 key），用于报告中文展示
+    sample_meta_json = Column(JSON)  # 失败样本元信息：id_columns / check_columns
     dimension = Column(String(32), nullable=False)
     severity = Column(String(16), nullable=False)
     passed = Column(Boolean, nullable=False)
@@ -90,6 +91,7 @@ _EXPECTED_COLUMNS: list[tuple[str, str]] = [
 # rule_results 表需要补的列（按 (列名, ddl)）
 _EXPECTED_RULE_RESULT_COLUMNS: list[tuple[str, str]] = [
     ("type", "VARCHAR(32) DEFAULT ''"),
+    ("sample_meta_json", "JSON"),
 ]
 
 

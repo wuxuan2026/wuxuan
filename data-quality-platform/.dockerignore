@@ -1,0 +1,21 @@
+# 把不需要进镜像的文件挡掉,镜像更小、构建更快
+.git
+.gitignore
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+env
+.idea
+.vscode
+*.log
+data/uploads/*
+!data/uploads/.gitkeep
+data/quality.db
+.env
+README.md
+Dockerfile
+.dockerignore
+compose.yaml

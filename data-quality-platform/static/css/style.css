@@ -374,6 +374,23 @@ label small, label > small { display: block; color: var(--text-dim); font-weight
 .rule-table .rule-name { font-weight: 500; }
 .rule-table .rule-msg  { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
 .rule-table tr.detail-row td { background: var(--bg); padding: 0 18px 14px 18px; border-bottom: 1px solid var(--border); }
+
+/* === 失败样本表格 === */
+.sample-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sample-table thead th { text-align: left; padding: 8px 10px; background: rgba(239, 68, 68, 0.06); color: var(--red); font-weight: 600; border-bottom: 1px solid rgba(239, 68, 68, 0.2); white-space: nowrap; }
+.sample-table thead th.grp-id { background: rgba(59, 130, 246, 0.08); color: #1d4ed8; text-align: center; }
+.sample-table thead th.grp-check { background: rgba(239, 68, 68, 0.10); color: var(--red); text-align: center; }
+.sample-table tbody td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.sample-table tbody tr.fail-row:hover { background: rgba(239, 68, 68, 0.04); }
+.sample-table .row-num { background: var(--red-soft); color: var(--red); padding: 2px 8px; border-radius: 999px; font-family: var(--font-mono); font-size: 11px; }
+.sample-table .cell-empty { color: var(--red); font-style: italic; }
+.sample-table td.cell-id { background: rgba(59, 130, 246, 0.03); }
+.sample-table td.cell-id code { font-weight: 500; color: #1d4ed8; }
+.sample-table td.cell-check .cell-empty { background: rgba(239, 68, 68, 0.08); padding: 0 6px; border-radius: 4px; }
+
+/* 规则明细失败行左侧红色竖条更醒目 */
+.rule-table tr.row-fail td:first-child { border-left: 3px solid var(--red); }
+.rule-table tr.row-error td:first-child { border-left: 3px solid var(--red); }
 /* 编辑模式下：输入框去边框，hover 才有边框，更像表格 */
 .rule-table input[type="text"],
 .rule-table select { width: 100%; padding: 6px 8px; border: 1px solid transparent; background: transparent; border-radius: 6px; font-size: 13px; }

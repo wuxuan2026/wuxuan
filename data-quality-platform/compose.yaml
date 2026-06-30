@@ -1,0 +1,41 @@
+# Docker Compose 编排 —— 当前只有 1 个 web 服务
+# 启动: docker compose up --build
+# 停止: docker compose down
+# 后台: docker compose up -d --build
+#
+# 数据持久化: ./data 目录挂载进容器,SQLite 历史/上传文件/YAML 规则集都保留在宿主机
+# 这样 docker compose down 不会丢数据,容器重建后历史报告仍可查
+
+services:
+  web:
+    build: .
+    image: data-quality-platform:latest
+    container_name: dqp-web
+    ports:
+      - "8000:8000"          # 浏览器访问 http://localhost:8000
+    volumes:
+      # 宿主机 data/ → 容器 /app/data(双向同步)
+      # Windows 路径在 Docker Desktop 下无需改,Docker 会自动翻译
+      - ./data:/app/data
+    environment:
+      # 容器内仍用 SQLite,路径相对 /app 即可
+      - DATA_DIR=data
+      - UPLOAD_DIR=data/uploads
+      - GENERATED_DIR=data/generated
+      - RULESET_DIR=data/rulesets
+      - DATABASE_URL=sqlite:///data/quality.db
+      - SAMPLE_LIMIT=50
+    restart: unless-stopped
+
+  # 后续要加 MySQL/Redis 时,在下面追加,例如:
+  # mysql:
+  #   image: mysql:8
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: rootpw
+  #     MYSQL_DATABASE: dqp
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #   ports:
+  #     - "3306:3306"
+# volumes:
+#   mysql_data:
