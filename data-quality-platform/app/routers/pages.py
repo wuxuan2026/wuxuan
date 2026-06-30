@@ -68,11 +68,13 @@ def index(request: Request):
 
 @router.get("/upload", response_class=HTMLResponse)
 def upload(request: Request):
+    from app.loaders.mysql import list_connections
     return templates.TemplateResponse(
         request,
         "upload.html",
         {
             "rulesets": _available_rulesets(),
+            "mysql_connections": list_connections(),
         },
     )
 

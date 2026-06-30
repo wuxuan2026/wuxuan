@@ -5,18 +5,16 @@ from pathlib import Path
 
 
 def test_check_service_includes_row_count_for_dataset():
-    """run_for_dataset 报告里必须有 row_count（数据总行数）。"""
+    """run_for_dataset 报告里必须有 row_count（数据总行数）。
+
+    注：删除 demo 数据后 run_for_dataset 会用内置 fallback 测试数据。
+    """
     from app.services.check_service import CheckService
     svc = CheckService()
     r = svc.run_for_dataset("orders")
     assert "row_count" in r, "报告缺少 row_count"
     assert isinstance(r["row_count"], int)
     assert r["row_count"] > 0, f"row_count 应 > 0，实际 {r['row_count']}"
-    # 跟 CSV 实际行数一致（orders.csv 500 行）
-    csv_path = Path("data/generated/orders.csv")
-    with csv_path.open(encoding="utf-8") as f:
-        n_lines = sum(1 for _ in f) - 1  # 减表头
-    assert r["row_count"] == n_lines, f"row_count={r['row_count']} 但 csv 有 {n_lines} 行"
 
 
 def test_check_service_includes_columns():
@@ -32,16 +30,28 @@ def test_check_service_includes_columns():
 
 
 def test_uploaded_check_includes_row_count():
+    """上传路径：row_count 必须正确反映上传文件的行数。"""
+    import tempfile
     from app.services.check_service import CheckService
-    from pathlib import Path
-    svc = CheckService()
-    r = svc.run_for_uploaded(
-        dataset="orders",
-        csv_path=Path("data/generated/orders.csv"),
-        ruleset_path=Path("data/rulesets/orders_rules.yaml"),
+    csv = (
+        "order_id,customer_id,order_date,order_amount,discount,paid_amount,refund_amount,order_status,customer_email\n"
+        "O000001,C00001,2026-06-29,100.0,10.0,90.0,0.0,paid,a@b.com\n"
+        "O000002,C00002,2026-06-29,200.0,20.0,180.0,0.0,paid,a@b.com\n"
     )
-    assert r["row_count"] > 0
-    assert len(r["columns"]) > 0
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8") as f:
+        f.write(csv)
+        tmp = f.name
+    try:
+        svc = CheckService()
+        r = svc.run_for_uploaded(
+            dataset="orders",
+            csv_path=Path(tmp),
+            ruleset_path=Path("data/rulesets/orders_rules.yaml"),
+        )
+        assert r["row_count"] == 2
+        assert len(r["columns"]) > 0
+    finally:
+        Path(tmp).unlink()
 
 
 def test_persistence_includes_row_count():

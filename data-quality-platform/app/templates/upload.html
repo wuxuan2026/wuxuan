@@ -36,12 +36,68 @@
   </div>
 
   <div class="card">
-    <h3>💡 提示</h3>
-    <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;">
-      <li>请上传与规则集字段匹配的 CSV/Excel 文件。</li>
-      <li>规则集可在 <a href="/rulesets">规则集页面</a> 查看和编辑。</li>
-      <li>检测结果会自动写入历史数据库（<code>data/quality.db</code>）。</li>
-    </ul>
+    <h3>🗄️ 从 MySQL 检测</h3>
+    <p style="font-size:13px;">直接拉取 MySQL 表进行质量检测，关联表也可一并加载（用于外键等检查）。</p>
+
+    {% if not mysql_connections %}
+    <div class="flash flash-warning" style="margin-top:14px;">
+      <span class="flash-dot"></span>
+      当前未配置 MySQL 连接。在 <code>.env</code> 里设置：
+      <pre style="margin-top:6px;background:var(--bg);padding:8px;border-radius:6px;font-size:12px;overflow:auto;">MYSQL_DEFAULT_HOST=127.0.0.1
+MYSQL_DEFAULT_PORT=3306
+MYSQL_DEFAULT_USER=root
+MYSQL_DEFAULT_PASSWORD=******
+MYSQL_DEFAULT_DATABASE=mydb
+# 限制可用连接（推荐）
+# MYSQL_ALLOWED_CONNECTIONS=DEFAULT,BI</pre>
+    </div>
+    {% else %}
+    <form method="post" action="/mysql/check" style="margin-top:20px;" id="mysql-form">
+      <label>连接
+        <select name="table_spec" id="mysql-conn" required>
+          {% for c in mysql_connections %}
+          <option value="{{ c.name }}/" data-conn="{{ c.name }}">{{ c.name }} — {{ c.host }}:{{ c.port }}/{{ c.database }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>主表名
+        <input type="text" id="mysql-table" name="table_spec_display" placeholder="orders" required oninput="syncMysqlTable()">
+      </label>
+      <input type="hidden" name="table_spec" id="table_spec_real" required>
+      <label>关联表（逗号分隔，可选）
+        <input type="text" name="related_tables" placeholder="customers, arrivals">
+      </label>
+      <label>行数限制（可选）
+        <input type="number" name="limit" placeholder="不限" min="1">
+      </label>
+      <label>规则集
+        <select name="ruleset" required>
+          <option value="" disabled selected>-- 请选择规则集 --</option>
+          {% for r in rulesets %}
+          <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" style="width:100%;">从 MySQL 检测</button>
+    </form>
+    <script>
+    function syncMysqlTable() {
+      var conn = document.getElementById('mysql-conn').value;
+      var table = document.getElementById('mysql-table').value.trim();
+      document.getElementById('table_spec_real').value = conn + table;
+    }
+    document.getElementById('mysql-conn').addEventListener('change', syncMysqlTable);
+    </script>
+    {% endif %}
   </div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h3>💡 提示</h3>
+  <ul style="font-size:14px;color:var(--text-dim);line-height:1.8;">
+    <li>请上传与规则集字段匹配的 CSV/Excel 文件。</li>
+    <li>MySQL 检测会按需自动加载同名关联表（如 orders 规则集会拉 customers / arrivals）。</li>
+    <li>检测结果会自动写入历史数据库（<code>data/quality.db</code>）。</li>
+  </ul>
 </div>
 {% endblock %}

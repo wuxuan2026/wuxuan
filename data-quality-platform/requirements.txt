@@ -8,6 +8,8 @@ xlrd>=2.0.1
 pydantic>=2.5
 pydantic-settings>=2.1
 sqlalchemy>=2.0
+pymysql>=1.1
+cryptography>=42.0  # pymysql 8.0+ 需要
 pyyaml>=6.0
 chardet>=5.2
 

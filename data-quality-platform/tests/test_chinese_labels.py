@@ -1,15 +1,34 @@
 """中文标签：type / severity 中文展示 + 权重列。"""
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
 
 def _run_and_get_report():
+    """通过上传路径跑一次（删 demo 数据后唯一稳定的方式）。"""
     from app.services.check_service import CheckService
-    svc = CheckService()
-    return svc.run_for_dataset("orders")
+    csv = (
+        "order_id,customer_id,order_date,order_amount,discount,paid_amount,refund_amount,order_status,customer_email\n"
+        "O000001,C00001,2026-06-29,100.0,10.0,90.0,0.0,paid,a@b.com\n"
+        "O000002,C00002,2026-06-29,200.0,20.0,180.0,0.0,paid,a@b.com\n"
+    )
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8") as f:
+        f.write(csv)
+        tmp = f.name
+    try:
+        svc = CheckService()
+        return svc.run_for_uploaded(
+            dataset="orders",
+            csv_path=Path(tmp),
+            ruleset_path=Path("data/rulesets/orders_rules.yaml"),
+        )
+    finally:
+        Path(tmp).unlink()
 
 
 def _decode(resp) -> str:
