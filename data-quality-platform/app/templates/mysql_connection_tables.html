@@ -25,19 +25,29 @@
   <table class="rule-table">
     <thead>
       <tr>
-        <th style="width:60px;">#</th>
-        <th>表名</th>
-        <th style="width:160px;">操作</th>
+        <th style="width:50px;">#</th>
+        <th style="width:240px;">表名</th>
+        <th>注释名</th>
+        <th style="width:80px;">引擎</th>
+        <th style="width:170px;">操作</th>
       </tr>
     </thead>
     <tbody>
       {% for t in tables %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td><strong><code>{{ t }}</code></strong></td>
+        <td><strong><code>{{ t.name }}</code></strong></td>
         <td>
-          <a role="button" href="/mysql/connections/{{ cfg.name }}/tables/{{ t }}" style="font-size:12px;padding:4px 10px;">预览</a>
-          <a role="button" class="secondary" href="/upload" style="font-size:12px;padding:4px 10px;">用此表检测</a>
+          {% if t.comment %}
+            <span style="color:var(--text);">{{ t.comment }}</span>
+          {% else %}
+            <span style="color:var(--text-dim);font-style:italic;">（无注释）</span>
+          {% endif %}
+        </td>
+        <td><span class="badge badge-blue" style="font-family:var(--font-mono);font-size:11px;">{{ t.engine or '—' }}</span></td>
+        <td>
+          <a role="button" href="/mysql/connections/{{ cfg.name }}/tables/{{ t.name }}" style="font-size:12px;padding:4px 10px;">预览</a>
+          <a role="button" class="secondary" href="/upload" style="font-size:12px;padding:4px 10px;">检测</a>
         </td>
       </tr>
       {% endfor %}

@@ -32,7 +32,11 @@ def test_tables_page_lists_tables(isolated_config, monkeypatch):
     c = TestClient(app)
     # mock list_tables：函数在路由里被延迟 import，patch 路径要在 module 路径
     fake_module = MagicMock()
-    fake_module.list_tables.return_value = ["orders", "customers", "arrivals"]
+    fake_module.list_tables.return_value = [
+        {"name": "orders", "comment": "订单表", "engine": "InnoDB"},
+        {"name": "customers", "comment": "客户维度", "engine": "InnoDB"},
+        {"name": "arrivals", "comment": "", "engine": "InnoDB"},
+    ]
     with patch.dict("sys.modules", {"app.loaders.mysql": fake_module}):
         r = c.get("/mysql/connections/BI/tables")
     assert r.status_code == 200
@@ -40,6 +44,9 @@ def test_tables_page_lists_tables(isolated_config, monkeypatch):
     assert "orders" in text
     assert "customers" in text
     assert "arrivals" in text
+    # 注释名也必须展示
+    assert "订单表" in text
+    assert "客户维度" in text
     assert "共" in text and "3" in text  # 共 3 张表
 
 

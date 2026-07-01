@@ -132,14 +132,33 @@ def list_connections() -> list[dict[str, Any]]:
     return out
 
 
-def list_tables(conn_name: str | None = None) -> list[str]:
-    """列出某连接下的所有表名（调用方应该限制权限范围）。"""
+def list_tables(conn_name: str | None = None) -> list[dict[str, str]]:
+    """列出某连接下的所有表 + 注释（中文表名）。
+
+    返回 [{"name": "orders", "comment": "订单表", "engine": "InnoDB"}, ...]
+
+    实现：从 information_schema.TABLES 一次拿全，比 SHOW TABLES 多一个往返但能
+    拿到注释（这是 MySQL 推荐的「表注释名」来源）。
+    """
     url = build_mysql_url(conn_name)
+    # 先取默认 db 名（连接配置里的 database）
+    cfg = _resolve_connection(conn_name)
+    db = cfg["database"]
+
     engine = create_engine(url, future=True)
     try:
         with engine.connect() as conn:
-            rows = conn.execute(text("SHOW TABLES")).fetchall()
-            return [r[0] for r in rows]
+            sql = text(
+                "SELECT TABLE_NAME, IFNULL(TABLE_COMMENT, '') AS TABLE_COMMENT, ENGINE "
+                "FROM information_schema.TABLES "
+                "WHERE TABLE_SCHEMA = :db AND TABLE_TYPE = 'BASE TABLE' "
+                "ORDER BY TABLE_NAME"
+            )
+            rows = conn.execute(sql, {"db": db}).fetchall()
+            return [
+                {"name": r[0], "comment": r[1] or "", "engine": r[2] or ""}
+                for r in rows
+            ]
     finally:
         engine.dispose()
 
