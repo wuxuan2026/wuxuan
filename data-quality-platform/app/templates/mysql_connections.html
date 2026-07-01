@@ -36,7 +36,7 @@
         <th>数据库</th>
         <th style="width:80px;">用户</th>
         <th style="width:100px;">密码</th>
-        <th style="width:240px;">操作</th>
+        <th style="width:340px;">操作</th>
       </tr>
     </thead>
     <tbody>
@@ -49,6 +49,7 @@
         <td>{{ c.user }}</td>
         <td>{{ c.password }}</td>
         <td>
+          <a role="button" href="/mysql/connections/{{ c.name }}/tables" style="font-size:12px;padding:4px 10px;">📋 库表</a>
           <button type="button" class="btn-test" data-name="{{ c.name }}" style="font-size:12px;padding:4px 10px;">测试连接</button>
           <a role="button" class="secondary" href="/mysql/connections/{{ c.name }}/edit" style="font-size:12px;padding:4px 10px;">编辑</a>
           <form method="post" action="/mysql/connections/{{ c.name }}/delete" style="display:inline;" onsubmit="return confirm('确定删除连接 {{ c.name }}？');">

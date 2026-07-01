@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} 的表 · 数据质量监测平台{% endblock %}
+{% block page_title %}库表 · {{ name }}{% endblock %}
+{% block topbar %}
+  <a role="button" class="secondary" href="/mysql/connections">← 返回连接</a>
+{% endblock %}
+{% block content %}
+
+<p style="font-size:14px;color:var(--text-dim);margin-bottom:14px;">
+  连接 <strong>{{ cfg.name }}</strong>（<code>{{ cfg.host }}:{{ cfg.port }}/{{ cfg.database }}</code>）下的表。
+  点表名查看前 20 行预览。
+</p>
+
+{% if error %}
+<article class="flash flash-error">
+  <span class="flash-dot"></span>无法读取表列表：{{ error }}
+  <div style="font-size:12px;margin-top:6px;color:var(--text-dim);">
+    请到 <a href="/mysql/connections">连接管理</a> 检查配置，或确认数据库可达。
+  </div>
+</article>
+{% endif %}
+
+{% if tables %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="rule-table">
+    <thead>
+      <tr>
+        <th style="width:60px;">#</th>
+        <th>表名</th>
+        <th style="width:160px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tables %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong><code>{{ t }}</code></strong></td>
+        <td>
+          <a role="button" href="/mysql/connections/{{ cfg.name }}/tables/{{ t }}" style="font-size:12px;padding:4px 10px;">预览</a>
+          <a role="button" class="secondary" href="/upload" style="font-size:12px;padding:4px 10px;">用此表检测</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif not error %}
+<div class="empty">
+  <div style="font-size:40px;margin-bottom:12px;">📭</div>
+  该数据库下没有表
+</div>
+{% endif %}
+
+<p style="font-size:13px;color:var(--text-dim);margin-top:16px;">
+  共 <strong>{{ tables|length }}</strong> 张表。
+</p>
+{% endblock %}

@@ -112,3 +112,64 @@ def test_connection(name: str):
 @router.get("/api/mysql/config")
 def api_list():
     return JSONResponse({"connections": svc.list_connections_masked()})
+
+
+@router.get("/mysql/connections/{name}/tables", response_class=HTMLResponse)
+def connection_tables_page(request: Request, name: str):
+    """查看某连接下的所有表名。"""
+    cfg = svc.get_connection(name)
+    if not cfg:
+        return RedirectResponse(url="/mysql/connections?error=not_found", status_code=303)
+    # 取表列表（可能因网络问题失败）
+    tables: list[str] = []
+    error: str | None = None
+    try:
+        from app.loaders.mysql import list_tables
+        tables = list_tables(name)
+    except Exception as e:
+        error = str(e)
+    return templates.TemplateResponse(
+        request,
+        "mysql_connection_tables.html",
+        {
+            "name": name,
+            "cfg": cfg,
+            "tables": tables,
+            "error": error,
+        },
+    )
+
+
+@router.get("/mysql/connections/{name}/tables/{table}", response_class=HTMLResponse)
+def connection_table_preview(request: Request, name: str, table: str):
+    """预览某表的结构（前 N 行 + 列名）。"""
+    cfg = svc.get_connection(name)
+    if not cfg:
+        return RedirectResponse(url="/mysql/connections?error=not_found", status_code=303)
+    # 表名校验
+    import re
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", table):
+        return RedirectResponse(url=f"/mysql/connections/{name}/tables?error=bad_table", status_code=303)
+
+    rows = None
+    cols: list[str] = []
+    error: str | None = None
+    try:
+        from app.loaders.mysql import MysqlLoader
+        loader = MysqlLoader(limit=20)
+        rows = loader.load(f"{name}/{table}" if name != "DEFAULT" else table)
+        cols = [str(c) for c in rows.columns]
+    except Exception as e:
+        error = str(e)
+    return templates.TemplateResponse(
+        request,
+        "mysql_connection_table_preview.html",
+        {
+            "name": name,
+            "table": table,
+            "cfg": cfg,
+            "columns": cols,
+            "rows": rows.to_dict("records") if rows is not None else [],
+            "error": error,
+        },
+    )

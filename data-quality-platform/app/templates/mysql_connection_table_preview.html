@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ table }} · {{ name }} · 数据质量监测平台{% endblock %}
+{% block page_title %}表预览 · {{ table }}{% endblock %}
+{% block topbar %}
+  <a role="button" class="secondary" href="/mysql/connections/{{ name }}/tables">← 返回表列表</a>
+{% endblock %}
+{% block content %}
+
+<p style="font-size:14px;color:var(--text-dim);margin-bottom:14px;">
+  连接 <strong>{{ name }}</strong> → 数据库 <code>{{ cfg.database }}</code> → 表 <strong>{{ table }}</strong>
+  （最多预览前 20 行）
+</p>
+
+{% if error %}
+<article class="flash flash-error">
+  <span class="flash-dot"></span>无法读取表数据：{{ error }}
+</article>
+{% endif %}
+
+{% if columns %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <strong>{{ rows|length }}</strong> 行（预览）/ 共 <strong>{{ columns|length }}</strong> 列
+    </div>
+    <a role="button" href="/upload" class="secondary" style="font-size:12px;padding:4px 10px;">用此表检测 →</a>
+  </div>
+  <div style="overflow:auto;">
+    <table class="sample-table">
+      <thead>
+        <tr>
+          {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          {% for col in columns %}
+          <td><span class="{% if row[col] == '' or row[col] is none %}cell-empty{% endif %}">{{ row[col] if row[col] != '' else '（空）' }}</span></td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
